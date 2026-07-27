@@ -74,6 +74,8 @@ Route::prefix('settings')->name('api.')->group(function (): void {
     )->name('settings.show');
 });
 
+require __DIR__.'/catalogue.php';
+
 Route::prefix('delivery-zone')
     ->name('delivery_zone.')
     ->group(function (): void {
