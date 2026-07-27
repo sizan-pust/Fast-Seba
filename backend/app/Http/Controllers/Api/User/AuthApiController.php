@@ -20,6 +20,7 @@ use App\Services\SocialAuthService;
 use App\Types\Api\ApiResponseType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -175,42 +176,48 @@ class AuthApiController extends Controller
             ]);
         }
 
-        $user = User::query()->create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'mobile' => $mobile,
-            'password' => $validated['password'],
-            'country' => $validated['country'] ?? 'Bangladesh',
-            'iso_2' => strtoupper($validated['iso_2'] ?? 'BD'),
-            'country_code' => '+880',
-            'referral_code' => $this->generateReferralCode(),
-            'friends_code' => $validated['friends_code'] ?? null,
-            'status' => 'active',
-            'access_panel' => GuardNameEnum::WEB->value,
-            'logged_in_type' => UserLoginTypeEnum::PLATFORM->value,
-        ]);
+        $user = DB::transaction(
+            function () use ($validated, $mobile, $request): User {
+                $user = User::query()->create([
+                    'name' => $validated['name'],
+                    'email' => $validated['email'],
+                    'mobile' => $mobile,
+                    'password' => $validated['password'],
+                    'country' => $validated['country'] ?? 'Bangladesh',
+                    'iso_2' => strtoupper($validated['iso_2'] ?? 'BD'),
+                    'country_code' => '+880',
+                    'referral_code' => $this->generateReferralCode(),
+                    'friends_code' => $validated['friends_code'] ?? null,
+                    'status' => 'active',
+                    'access_panel' => GuardNameEnum::WEB->value,
+                    'logged_in_type' => UserLoginTypeEnum::PLATFORM->value,
+                ]);
 
-        $user->syncRoles([
-            DefaultSystemRolesEnum::CUSTOMER->value,
-        ]);
+                $user->syncRoles([
+                    DefaultSystemRolesEnum::CUSTOMER->value,
+                ]);
 
-        $system = $this->settingService
-            ->getSettingValues('system');
+                $system = $this->settingService
+                    ->getSettingValues('system');
 
-        Wallet::query()->create([
-            'user_id' => $user->id,
-            'type' => WalletTypeEnum::CUSTOMER->value,
-            'balance' => max(
-                0,
-                (float) (
-                    $system['welcomeWalletBalanceAmount'] ?? 0
-                )
-            ),
-            'blocked_balance' => 0,
-            'currency_code' => $system['currencyCode'] ?? 'BDT',
-        ]);
+                Wallet::query()->create([
+                    'user_id' => $user->id,
+                    'type' => WalletTypeEnum::CUSTOMER->value,
+                    'balance' => max(
+                        0,
+                        (float) (
+                            $system['welcomeWalletBalanceAmount'] ?? 0
+                        )
+                    ),
+                    'blocked_balance' => 0,
+                    'currency_code' => $system['currencyCode'] ?? 'BDT',
+                ]);
 
-        $this->storeFcmToken($request, $user);
+                $this->storeFcmToken($request, $user);
+
+                return $user;
+            }
+        );
 
         try {
             $user->sendEmailVerificationNotification();

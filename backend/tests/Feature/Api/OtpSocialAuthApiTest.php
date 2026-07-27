@@ -137,6 +137,39 @@ class OtpSocialAuthApiTest extends TestCase
         ]);
     }
 
+    public function test_failed_otp_registration_rolls_back_and_keeps_otp_active(): void
+    {
+        $this->postJson('/api/auth/send-otp', [
+            'mobile' => '01710000007',
+        ])->assertOk();
+
+        Role::query()
+            ->where('name', DefaultSystemRolesEnum::CUSTOMER->value)
+            ->where('guard_name', GuardNameEnum::WEB->value)
+            ->delete();
+
+        app(\Spatie\Permission\PermissionRegistrar::class)
+            ->forgetCachedPermissions();
+
+        $this->postJson('/api/auth/verify-otp', [
+            'mobile' => '01710000007',
+            'otp' => '123456',
+            'name' => 'OTP Rollback Customer',
+            'email' => 'otp-rollback@example.test',
+            'password' => 'Test@123456',
+            'password_confirmation' => 'Test@123456',
+        ])->assertStatus(500);
+
+        $this->assertDatabaseMissing('users', [
+            'email' => 'otp-rollback@example.test',
+        ]);
+
+        $this->assertDatabaseHas('user_otps', [
+            'mobile' => '01710000007',
+            'verified_at' => null,
+        ]);
+    }
+
     public function test_otp_can_register_new_customer(): void
     {
         $this->postJson('/api/auth/send-otp', [

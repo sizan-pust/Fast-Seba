@@ -8,6 +8,7 @@ use App\Enums\UserLoginTypeEnum;
 use App\Enums\WalletTypeEnum;
 use App\Models\User;
 use App\Models\Wallet;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class SocialAuthService
@@ -150,48 +151,63 @@ class SocialAuthService
             ];
         }
 
-        $user = User::query()->create([
-            'name' => $profile['name']
-                ?: ($email ?: ($type === UserLoginTypeEnum::APPLE
-                    ? 'Apple User'
-                    : 'User')),
-            'email' => $email,
-            'firebase_uid' => $uid,
-            'email_verified_at' => (
-                $profile['email_verified'] ?? false
-            ) ? now() : null,
-            'friends_code' => $friendsCode,
-            'referral_code' => $this->generateReferralCode(),
-            'country' => $extra['country'] ?? 'Bangladesh',
-            'iso_2' => strtoupper($extra['iso_2'] ?? 'BD'),
-            'country_code' => '+880',
-            'status' => 'active',
-            'access_panel' => GuardNameEnum::WEB->value,
-            'logged_in_type' => $type->value,
-        ]);
+        $user = DB::transaction(
+            function () use (
+                $profile,
+                $email,
+                $uid,
+                $type,
+                $friendsCode,
+                $extra
+            ): User {
+                $user = User::query()->create([
+                    'name' => $profile['name']
+                        ?: ($email ?: (
+                            $type === UserLoginTypeEnum::APPLE
+                                ? 'Apple User'
+                                : 'User'
+                        )),
+                    'email' => $email,
+                    'firebase_uid' => $uid,
+                    'email_verified_at' => (
+                        $profile['email_verified'] ?? false
+                    ) ? now() : null,
+                    'friends_code' => $friendsCode,
+                    'referral_code' => $this->generateReferralCode(),
+                    'country' => $extra['country'] ?? 'Bangladesh',
+                    'iso_2' => strtoupper($extra['iso_2'] ?? 'BD'),
+                    'country_code' => '+880',
+                    'status' => 'active',
+                    'access_panel' => GuardNameEnum::WEB->value,
+                    'logged_in_type' => $type->value,
+                ]);
 
-        $user->syncRoles([
-            DefaultSystemRolesEnum::CUSTOMER->value,
-        ]);
+                $user->syncRoles([
+                    DefaultSystemRolesEnum::CUSTOMER->value,
+                ]);
 
-        $system = $this->settingService
-            ->getSettingValues('system');
+                $system = $this->settingService
+                    ->getSettingValues('system');
 
-        Wallet::query()->firstOrCreate(
-            [
-                'user_id' => $user->id,
-                'type' => WalletTypeEnum::CUSTOMER->value,
-            ],
-            [
-                'balance' => max(
-                    0,
-                    (float) (
-                        $system['welcomeWalletBalanceAmount'] ?? 0
-                    )
-                ),
-                'blocked_balance' => 0,
-                'currency_code' => $system['currencyCode'] ?? 'BDT',
-            ]
+                Wallet::query()->firstOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'type' => WalletTypeEnum::CUSTOMER->value,
+                    ],
+                    [
+                        'balance' => max(
+                            0,
+                            (float) (
+                                $system['welcomeWalletBalanceAmount'] ?? 0
+                            )
+                        ),
+                        'blocked_balance' => 0,
+                        'currency_code' => $system['currencyCode'] ?? 'BDT',
+                    ]
+                );
+
+                return $user;
+            }
         );
 
         return [

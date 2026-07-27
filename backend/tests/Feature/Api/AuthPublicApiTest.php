@@ -115,6 +115,33 @@ class AuthPublicApiTest extends TestCase
             ->assertJsonValidationErrors(['email']);
     }
 
+    public function test_registration_rolls_back_when_role_assignment_fails(): void
+    {
+        Role::query()
+            ->where('name', DefaultSystemRolesEnum::CUSTOMER->value)
+            ->where('guard_name', GuardNameEnum::WEB->value)
+            ->delete();
+
+        app(\Spatie\Permission\PermissionRegistrar::class)
+            ->forgetCachedPermissions();
+
+        $this->postJson('/api/register', [
+            'name' => 'Rollback Customer',
+            'email' => 'rollback@example.test',
+            'mobile' => '01719999991',
+            'password' => 'Test@123456',
+            'password_confirmation' => 'Test@123456',
+        ])->assertStatus(500);
+
+        $this->assertDatabaseMissing('users', [
+            'email' => 'rollback@example.test',
+        ]);
+
+        $this->assertDatabaseMissing('wallets', [
+            'currency_code' => 'BDT',
+        ]);
+    }
+
     public function test_customer_can_login_and_receive_expected_resource(): void
     {
         $user = User::query()->create([

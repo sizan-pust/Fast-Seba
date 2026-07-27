@@ -9,6 +9,7 @@ use App\Enums\WalletTypeEnum;
 use App\Models\User;
 use App\Models\UserOtp;
 use App\Models\Wallet;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -200,6 +201,17 @@ class OtpService
         ];
     }
 
+    public function consumeOtp(string $mobile): void
+    {
+        $record = UserOtp::query()
+            ->forMobile($this->sanitizeMobile($mobile))
+            ->active()
+            ->latest('created_at')
+            ->first();
+
+        $record?->markAsVerified();
+    }
+
     public function resolveMobileUser(
         string $mobile,
         array $validated
@@ -239,50 +251,54 @@ class OtpService
             ];
         }
 
-        $user = User::query()->create([
-            'name' => $validated['name'],
-            'email' => $validated['email'] ?? null,
-            'mobile' => $mobile,
-            'country_code' => '+880',
-            'password' => $validated['password'],
-            'country' => $validated['country'] ?? 'Bangladesh',
-            'iso_2' => strtoupper($validated['iso_2'] ?? 'BD'),
-            'friends_code' => $validated['friends_code'] ?? null,
-            'referral_code' => $this->generateReferralCode(),
-            'status' => 'active',
-            'access_panel' => GuardNameEnum::WEB->value,
-            'logged_in_type' => UserLoginTypeEnum::PLATFORM->value,
-            'mobile_verified_at' => now(),
-        ]);
+        return DB::transaction(
+            function () use ($mobile, $validated): array {
+                $user = User::query()->create([
+                    'name' => $validated['name'],
+                    'email' => $validated['email'] ?? null,
+                    'mobile' => $mobile,
+                    'country_code' => '+880',
+                    'password' => $validated['password'],
+                    'country' => $validated['country'] ?? 'Bangladesh',
+                    'iso_2' => strtoupper($validated['iso_2'] ?? 'BD'),
+                    'friends_code' => $validated['friends_code'] ?? null,
+                    'referral_code' => $this->generateReferralCode(),
+                    'status' => 'active',
+                    'access_panel' => GuardNameEnum::WEB->value,
+                    'logged_in_type' => UserLoginTypeEnum::PLATFORM->value,
+                    'mobile_verified_at' => now(),
+                ]);
 
-        $user->syncRoles([
-            DefaultSystemRolesEnum::CUSTOMER->value,
-        ]);
+                $user->syncRoles([
+                    DefaultSystemRolesEnum::CUSTOMER->value,
+                ]);
 
-        $system = $this->settingService
-            ->getSettingValues('system');
+                $system = $this->settingService
+                    ->getSettingValues('system');
 
-        Wallet::query()->firstOrCreate(
-            [
-                'user_id' => $user->id,
-                'type' => WalletTypeEnum::CUSTOMER->value,
-            ],
-            [
-                'balance' => max(
-                    0,
-                    (float) (
-                        $system['welcomeWalletBalanceAmount'] ?? 0
-                    )
-                ),
-                'blocked_balance' => 0,
-                'currency_code' => $system['currencyCode'] ?? 'BDT',
-            ]
+                Wallet::query()->firstOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'type' => WalletTypeEnum::CUSTOMER->value,
+                    ],
+                    [
+                        'balance' => max(
+                            0,
+                            (float) (
+                                $system['welcomeWalletBalanceAmount'] ?? 0
+                            )
+                        ),
+                        'blocked_balance' => 0,
+                        'currency_code' => $system['currencyCode'] ?? 'BDT',
+                    ]
+                );
+
+                return [
+                    'status' => 'created',
+                    'user' => $user,
+                ];
+            }
         );
-
-        return [
-            'status' => 'created',
-            'user' => $user,
-        ];
     }
 
     public function mobileCandidates(string $mobile): array

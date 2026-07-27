@@ -54,17 +54,10 @@ class OtpApiController extends Controller
             )
             ->exists();
 
-        $hasRegistrationDetails = ! empty($validated['name'])
-            && ! empty($validated['password']);
-
-        $consumeOtp = $authenticatedUser !== null
-            || $existingUser
-            || $hasRegistrationDetails;
-
         $verification = $this->otpService->verifyOtp(
             $mobile,
             $validated['otp'],
-            $consumeOtp
+            false
         );
 
         if (! $verification['success']) {
@@ -106,6 +99,8 @@ class OtpApiController extends Controller
                     ?? $authedUser->friends_code,
             ])->save();
 
+            $this->otpService->consumeOtp($mobile);
+
             return ApiResponseType::sendJsonResponse(
                 true,
                 'Mobile verified successfully.',
@@ -131,6 +126,8 @@ class OtpApiController extends Controller
         }
 
         $user = $resolved['user'];
+
+        $this->otpService->consumeOtp($mobile);
 
         if (! empty($validated['fcm_token'])) {
             $this->deviceTokenService->sync(
