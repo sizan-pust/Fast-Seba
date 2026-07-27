@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\DeliveryZoneApiController;
 use App\Http\Controllers\Api\SettingApiController;
 use App\Http\Controllers\Api\User\AuthApiController;
+use App\Http\Controllers\Api\User\OtpApiController;
 use App\Http\Controllers\Api\User\UserApiController;
 use App\Http\Controllers\DeviceTokenController;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +23,31 @@ Route::post(
     'verify-user',
     [AuthApiController::class, 'verifyUser']
 );
+
+Route::post(
+    'auth/send-otp',
+    [OtpApiController::class, 'sendOtp']
+)->name('send-otp');
+
+Route::post(
+    'auth/verify-otp',
+    [OtpApiController::class, 'verifyOtp']
+)->name('verify-otp');
+
+Route::post(
+    'auth/google/callback',
+    [AuthApiController::class, 'googleCallback']
+)->name('google-callback');
+
+Route::post(
+    'auth/apple/callback',
+    [AuthApiController::class, 'appleCallback']
+)->name('apple-callback');
+
+Route::post(
+    'auth/phone/callback',
+    [AuthApiController::class, 'phoneCallback']
+)->name('phone-callback');
 
 Route::prefix('settings')->name('api.')->group(function (): void {
     Route::get('/', [SettingApiController::class, 'index'])

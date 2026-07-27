@@ -10,6 +10,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             FoundationSeeder::class,
+            AuthProviderSeeder::class,
         ]);
     }
 }

@@ -7,11 +7,16 @@ use App\Enums\GuardNameEnum;
 use App\Enums\UserLoginTypeEnum;
 use App\Enums\WalletTypeEnum;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\AppleCallbackRequest;
+use App\Http\Requests\Auth\GoogleCallbackRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\DeviceTokenService;
+use App\Services\FirebaseAuthService;
+use App\Services\OtpService;
 use App\Services\SettingService;
+use App\Services\SocialAuthService;
 use App\Types\Api\ApiResponseType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,7 +29,10 @@ class AuthApiController extends Controller
 {
     public function __construct(
         private readonly SettingService $settingService,
-        private readonly DeviceTokenService $deviceTokenService
+        private readonly DeviceTokenService $deviceTokenService,
+        private readonly FirebaseAuthService $firebaseAuthService,
+        private readonly SocialAuthService $socialAuthService,
+        private readonly OtpService $otpService
     ) {
     }
 
@@ -37,7 +45,9 @@ class AuthApiController extends Controller
         ]);
 
         $user = $validated['type'] === 'email'
-            ? User::query()->where('email', $validated['value'])->first()
+            ? User::query()
+                ->where('email', $validated['value'])
+                ->first()
             : User::query()
                 ->whereIn(
                     'mobile',
@@ -48,17 +58,15 @@ class AuthApiController extends Controller
                 )
                 ->first();
 
-        $data = [
-            'exists' => $user !== null,
-            'type' => $validated['type'],
-            'value' => $validated['value'],
-            'country_code' => $validated['country_code'] ?? null,
-        ];
-
         return ApiResponseType::sendJsonResponse(
             $user !== null,
             $user ? 'User found.' : 'User not found.',
-            $data
+            [
+                'exists' => $user !== null,
+                'type' => $validated['type'],
+                'value' => $validated['value'],
+                'country_code' => $validated['country_code'] ?? null,
+            ]
         );
     }
 
@@ -72,23 +80,30 @@ class AuthApiController extends Controller
             'device_type' => ['nullable', 'in:android,ios,web'],
         ]);
 
-        $query = User::query()->where('access_panel', GuardNameEnum::WEB->value);
+        $query = User::query()
+            ->where('access_panel', GuardNameEnum::WEB->value);
 
         if (! empty($validated['email'])) {
             $query->where('email', $validated['email']);
         } else {
             $query->whereIn(
                 'mobile',
-                $this->buildMobileCandidates($validated['mobile'], null)
+                $this->otpService->mobileCandidates(
+                    $validated['mobile']
+                )
             );
         }
 
         $user = $query->first();
 
-        if (! $user || ! $user->password || ! Hash::check(
-            $validated['password'],
-            $user->password
-        )) {
+        if (
+            ! $user
+            || ! $user->password
+            || ! Hash::check(
+                $validated['password'],
+                $user->password
+            )
+        ) {
             return ApiResponseType::sendJsonResponse(
                 false,
                 'Invalid credentials.',
@@ -108,26 +123,31 @@ class AuthApiController extends Controller
 
         $this->storeFcmToken($request, $user);
 
-        $tokenName = $user->email ?? $user->mobile ?? 'customer-api';
-        $token = $user->createToken($tokenName)->plainTextToken;
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Login successful.',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'data' => (new UserResource($user))->resolve($request),
-            'assigned_permissions' => [],
-        ]);
+        return $this->respondWithToken(
+            $request,
+            $user,
+            false,
+            'Login successful.'
+        );
     }
 
     public function register(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                'unique:users,email',
+            ],
             'mobile' => ['required', 'string', 'max:20'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
+            'password' => [
+                'required',
+                'string',
+                'min:6',
+                'confirmed',
+            ],
             'country' => ['nullable', 'string', 'max:255'],
             'iso_2' => ['nullable', 'string', 'size:2'],
             'friends_code' => [
@@ -140,11 +160,18 @@ class AuthApiController extends Controller
             'device_type' => ['nullable', 'in:android,ios,web'],
         ]);
 
-        $mobile = preg_replace('/\D+/', '', $validated['mobile']);
+        $mobile = $this->otpService->sanitizeMobile(
+            $validated['mobile']
+        );
 
-        if (User::query()->where('mobile', $mobile)->exists()) {
+        if (User::query()->whereIn(
+            'mobile',
+            $this->otpService->mobileCandidates($mobile)
+        )->exists()) {
             throw ValidationException::withMessages([
-                'mobile' => ['The mobile number has already been taken.'],
+                'mobile' => [
+                    'The mobile number has already been taken.',
+                ],
             ]);
         }
 
@@ -163,18 +190,22 @@ class AuthApiController extends Controller
             'logged_in_type' => UserLoginTypeEnum::PLATFORM->value,
         ]);
 
-        $user->syncRoles([DefaultSystemRolesEnum::CUSTOMER->value]);
+        $user->syncRoles([
+            DefaultSystemRolesEnum::CUSTOMER->value,
+        ]);
 
-        $system = $this->settingService->getSettingValues('system');
-        $welcomeAmount = max(
-            0,
-            (float) ($system['welcomeWalletBalanceAmount'] ?? 0)
-        );
+        $system = $this->settingService
+            ->getSettingValues('system');
 
         Wallet::query()->create([
             'user_id' => $user->id,
             'type' => WalletTypeEnum::CUSTOMER->value,
-            'balance' => $welcomeAmount,
+            'balance' => max(
+                0,
+                (float) (
+                    $system['welcomeWalletBalanceAmount'] ?? 0
+                )
+            ),
             'blocked_balance' => 0,
             'currency_code' => $system['currencyCode'] ?? 'BDT',
         ]);
@@ -184,23 +215,14 @@ class AuthApiController extends Controller
         try {
             $user->sendEmailVerificationNotification();
         } catch (\Throwable) {
-            // Local mail configuration may intentionally use the log driver.
         }
 
-        $token = $user->createToken($validated['email'])->plainTextToken;
-
-        $user->refresh();
-
-        $data = (new UserResource($user))->resolve($request);
-        $data['is_register'] = true;
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Registration successful. Verification email sent.',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'data' => $data,
-        ]);
+        return $this->respondWithToken(
+            $request,
+            $user,
+            true,
+            'Registration successful. Verification email sent.'
+        );
     }
 
     public function forgotPassword(Request $request): JsonResponse
@@ -218,6 +240,219 @@ class AuthApiController extends Controller
             __($status),
             []
         );
+    }
+
+    public function googleCallback(
+        GoogleCallbackRequest $request
+    ): JsonResponse {
+        $auth = $this->settingService
+            ->getSettingValues('authentication');
+
+        if (empty($auth['googleLogin'])) {
+            return ApiResponseType::sendJsonResponse(
+                false,
+                'Google login is not enabled.',
+                [],
+                422
+            );
+        }
+
+        try {
+            $profile = $this->firebaseAuthService->verify(
+                $request->validated('idToken')
+            );
+
+            $result = $this->socialAuthService
+                ->loginOrRegisterFromGoogle(
+                    $profile,
+                    $request->validated('friends_code'),
+                    [
+                        'country' => $request->validated('country'),
+                        'iso_2' => $request->validated('iso_2'),
+                    ]
+                );
+
+            $this->storeFcmToken(
+                $request,
+                $result['user']
+            );
+
+            return $this->respondWithToken(
+                $request,
+                $result['user'],
+                $result['is_new'],
+                $result['is_new']
+                    ? 'Registration successful.'
+                    : 'Login successful.'
+            );
+        } catch (\Throwable $e) {
+            return ApiResponseType::sendJsonResponse(
+                false,
+                'Invalid Firebase token.',
+                ['error' => $e->getMessage()],
+                401
+            );
+        }
+    }
+
+    public function appleCallback(
+        AppleCallbackRequest $request
+    ): JsonResponse {
+        $auth = $this->settingService
+            ->getSettingValues('authentication');
+
+        if (empty($auth['appleLogin'])) {
+            return ApiResponseType::sendJsonResponse(
+                false,
+                'Apple login is not enabled.',
+                [],
+                422
+            );
+        }
+
+        try {
+            $profile = $this->firebaseAuthService->verify(
+                $request->validated('idToken')
+            );
+
+            $result = $this->socialAuthService
+                ->loginOrRegisterFromApple(
+                    $profile,
+                    $request->validated('friends_code'),
+                    [
+                        'country' => $request->validated('country'),
+                        'iso_2' => $request->validated('iso_2'),
+                    ]
+                );
+
+            $this->storeFcmToken(
+                $request,
+                $result['user']
+            );
+
+            return $this->respondWithToken(
+                $request,
+                $result['user'],
+                $result['is_new'],
+                $result['is_new']
+                    ? 'Registration successful.'
+                    : 'Login successful.'
+            );
+        } catch (\Throwable $e) {
+            return ApiResponseType::sendJsonResponse(
+                false,
+                'Invalid Firebase token.',
+                ['error' => $e->getMessage()],
+                401
+            );
+        }
+    }
+
+    public function phoneCallback(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'idToken' => ['required', 'string'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'friends_code' => [
+                'nullable',
+                'string',
+                'max:32',
+                'exists:users,referral_code',
+            ],
+            'fcm_token' => ['nullable', 'string', 'max:255'],
+            'device_type' => ['nullable', 'in:android,ios,web'],
+        ]);
+
+        try {
+            $profile = $this->firebaseAuthService->verify(
+                $validated['idToken']
+            );
+
+            if (empty($profile['phone_number'])) {
+                return ApiResponseType::sendJsonResponse(
+                    false,
+                    'Phone number was not found in Firebase.',
+                    [],
+                    422
+                );
+            }
+
+            $authedUser = auth('sanctum')->user();
+
+            if ($authedUser) {
+                $mobile = $this->otpService->sanitizeMobile(
+                    $profile['phone_number']
+                );
+
+                $conflict = User::query()
+                    ->where('id', '!=', $authedUser->id)
+                    ->whereIn(
+                        'mobile',
+                        $this->otpService->mobileCandidates($mobile)
+                    )
+                    ->exists();
+
+                if ($conflict) {
+                    return ApiResponseType::sendJsonResponse(
+                        false,
+                        'This mobile number is already in use.',
+                        [],
+                        422
+                    );
+                }
+
+                $authedUser->forceFill([
+                    'mobile' => $mobile,
+                    'country_code' => '+880',
+                    'firebase_uid' => $profile['uid'],
+                    'mobile_verified_at' => now(),
+                    'name' => $validated['name']
+                        ?? $authedUser->name,
+                ])->save();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Mobile verified successfully.',
+                    'token' => $request->bearerToken(),
+                    'data' => new UserResource(
+                        $authedUser->fresh()
+                    ),
+                ]);
+            }
+
+            $result = $this->socialAuthService->loginWithPhone(
+                $profile,
+                $validated['name'] ?? null
+            );
+
+            if (! $result['user']) {
+                return ApiResponseType::sendJsonResponse(
+                    false,
+                    'User not found.',
+                    [],
+                    404
+                );
+            }
+
+            $this->storeFcmToken(
+                $request,
+                $result['user']
+            );
+
+            return $this->respondWithToken(
+                $request,
+                $result['user'],
+                false,
+                'Login successful.'
+            );
+        } catch (\Throwable $e) {
+            return ApiResponseType::sendJsonResponse(
+                false,
+                'Invalid Firebase token.',
+                ['error' => $e->getMessage()],
+                401
+            );
+        }
     }
 
     public function logout(Request $request): JsonResponse
@@ -242,8 +477,36 @@ class AuthApiController extends Controller
         );
     }
 
-    private function storeFcmToken(Request $request, User $user): void
-    {
+    private function respondWithToken(
+        Request $request,
+        User $user,
+        bool $isRegister,
+        string $message
+    ): JsonResponse {
+        $data = (new UserResource($user->fresh()))
+            ->resolve($request);
+
+        $data['is_register'] = $isRegister;
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'access_token' => $user->createToken(
+                $user->email
+                ?? $user->mobile
+                ?? $user->firebase_uid
+                ?? 'api-token'
+            )->plainTextToken,
+            'token_type' => 'Bearer',
+            'data' => $data,
+            'assigned_permissions' => [],
+        ]);
+    }
+
+    private function storeFcmToken(
+        Request $request,
+        User $user
+    ): void {
         $token = $request->input('fcm_token');
 
         if (! is_string($token) || $token === '') {
@@ -262,7 +525,10 @@ class AuthApiController extends Controller
     {
         do {
             $code = Str::upper(Str::random(8));
-        } while (User::query()->where('referral_code', $code)->exists());
+        } while (User::query()->where(
+            'referral_code',
+            $code
+        )->exists());
 
         return $code;
     }
@@ -271,27 +537,18 @@ class AuthApiController extends Controller
         string $value,
         ?string $countryCode
     ): array {
-        $digits = preg_replace('/\D+/', '', $value);
-        $candidates = [$value, $digits];
+        $candidates = $this->otpService
+            ->mobileCandidates($value);
 
         if ($countryCode) {
             $code = preg_replace('/\D+/', '', $countryCode);
+            $digits = preg_replace('/\D+/', '', $value);
 
-            if ($code !== '' && $digits !== '') {
-                $candidates[] = $code.$digits;
-                $candidates[] = '+'.$code.$digits;
-                $candidates[] = '+'.$code.' '.$digits;
-            }
+            $candidates[] = $code.$digits;
+            $candidates[] = '+'.$code.$digits;
+            $candidates[] = '+'.$code.' '.$digits;
         }
 
-        return array_values(
-            array_unique(
-                array_filter(
-                    $candidates,
-                    static fn ($candidate): bool => is_string($candidate)
-                        && $candidate !== ''
-                )
-            )
-        );
+        return array_values(array_unique($candidates));
     }
 }

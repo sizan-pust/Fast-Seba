@@ -27,4 +27,19 @@ return [
             'ios_url' => '',
         ],
     ],
+
+    'otp' => [
+        'expires_in_seconds' => (int) env('OTP_EXPIRES_IN', 600),
+        'max_attempts' => (int) env('OTP_MAX_ATTEMPTS', 3),
+        'resend_cooldown_seconds' => (int) env('OTP_RESEND_COOLDOWN', 60),
+        'test_mode' => (bool) env('OTP_TEST_MODE', false),
+        'test_code' => (string) env('OTP_TEST_CODE', '123456'),
+    ],
+
+    'firebase' => [
+        'service_account_path' => env(
+            'FIREBASE_CREDENTIALS',
+            storage_path('app/private/settings/service-account-file.json')
+        ),
+    ],
 ];
