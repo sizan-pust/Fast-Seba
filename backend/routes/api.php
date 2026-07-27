@@ -140,3 +140,5 @@ Route::middleware('auth:sanctum')->group(function (): void {
         )->name('delete-account');
     });
 });
+
+require __DIR__.'/commerce.php';

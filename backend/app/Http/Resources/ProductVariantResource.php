@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\CartItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,6 +23,24 @@ class ProductVariantResource extends JsonResource
             }
         }
 
+        $cartItem = null;
+        $user = $request->user('sanctum');
+
+        if ($user && $inventory) {
+            $cartItem = CartItem::query()
+                ->whereHas(
+                    'cart',
+                    fn ($query) => $query->where(
+                        'user_id',
+                        $user->id
+                    )
+                )
+                ->where('product_variant_id', $this->id)
+                ->where('store_id', $inventory->store_id)
+                ->where('save_for_later', false)
+                ->first();
+        }
+
         return [
             'id' => $this->id,
             'title' => $this->title,
@@ -33,8 +52,8 @@ class ProductVariantResource extends JsonResource
             'length' => (float) ($this->length ?? 0),
             'availability' => (bool) $this->availability,
             'cart_item' => [
-                'exists' => false,
-                'cart_item_id' => null,
+                'exists' => $cartItem !== null,
+                'cart_item_id' => $cartItem?->id,
             ],
             'barcode' => $this->barcode,
             'is_default' => (bool) $this->is_default,

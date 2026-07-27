@@ -2,7 +2,9 @@
 
 namespace App\Http\Resources;
 
+use App\Models\CartItem;
 use App\Models\Product;
+use App\Models\WishlistItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,6 +14,59 @@ class ProductListResource extends JsonResource
     {
         /** @var Product $product */
         $product = $this->resource;
+
+        $user = $request->user('sanctum');
+
+        $favorite = null;
+        $itemCountInCart = 0;
+        $isSaveForLater = false;
+
+        if ($user) {
+            $favoriteItems = WishlistItem::query()
+                ->whereHas(
+                    'wishlist',
+                    fn ($query) => $query->where(
+                        'user_id',
+                        $user->id
+                    )
+                )
+                ->where('product_id', $product->id)
+                ->with(['wishlist', 'variant', 'store'])
+                ->get();
+
+            if ($favoriteItems->isNotEmpty()) {
+                $favorite = $favoriteItems
+                    ->map(fn ($item) => [
+                        'id' => $item->id,
+                        'wishlist_id' => $item->wishlist_id,
+                        'wishlist_title' => $item->wishlist?->title,
+                        'variant_id' => $item->variant?->id,
+                        'variant_name' => $item->variant?->title,
+                        'store_id' => $item->store?->id,
+                        'store_name' => $item->store?->name,
+                    ])
+                    ->values()
+                    ->all();
+            }
+
+            $cartItems = CartItem::query()
+                ->whereHas(
+                    'cart',
+                    fn ($query) => $query->where(
+                        'user_id',
+                        $user->id
+                    )
+                )
+                ->where('product_id', $product->id);
+
+            $itemCountInCart = (clone $cartItems)
+                ->where('save_for_later', false)
+                ->sum('quantity');
+
+            $isSaveForLater = (clone $cartItems)
+                ->where('save_for_later', true)
+                ->exists();
+        }
 
         return [
             'id' => $product->id,
@@ -31,15 +86,15 @@ class ProductListResource extends JsonResource
                 ?? $product->seller?->business_name
                 ?? 'N/A',
             'indicator' => $product->indicator,
-            'favorite' => null,
+            'favorite' => $favorite,
             'estimated_delivery_time' => null,
             'base_prep_time' => (int) $product->base_prep_time,
             'ratings' => 0.0,
             'rating_count' => 0,
             'main_image' => $product->mainImageUrl(),
             'image_fit' => $product->image_fit,
-            'item_count_in_cart' => 0,
-            'is_save_for_later' => false,
+            'item_count_in_cart' => (int) $itemCountInCart,
+            'is_save_for_later' => $isSaveForLater,
             'additional_images' => $product->additionalImageUrls(),
             'minimum_order_quantity' => (int) (
                 $product->minimum_order_quantity

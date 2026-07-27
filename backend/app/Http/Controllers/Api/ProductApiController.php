@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ProductListResource;
 use App\Http\Resources\ProductResource;
+use App\Models\Brand;
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\Store;
 use App\Services\CatalogueQueryService;
@@ -49,6 +51,21 @@ class ProductApiController extends Controller
             (int) ($validated['per_page'] ?? 15)
         );
 
+        $categorySlugs = $this->csv($validated['categories'] ?? null);
+        $brandSlugs = $this->csv($validated['brands'] ?? null);
+
+        $categoryIds = Category::query()
+            ->whereIn('slug', $categorySlugs)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $brandIds = Brand::query()
+            ->whereIn('slug', $brandSlugs)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
         return ApiResponseType::sendJsonResponse(
             true,
             $paginator->total() > 0
@@ -59,9 +76,11 @@ class ProductApiController extends Controller
                 'last_page' => $paginator->lastPage(),
                 'per_page' => $paginator->perPage(),
                 'total' => $paginator->total(),
-                'keywords' => [],
-                'category_ids' => [],
-                'brand_ids' => [],
+                'keywords' => array_values(array_filter([
+                    $validated['search'] ?? null,
+                ])),
+                'category_ids' => $categoryIds,
+                'brand_ids' => $brandIds,
                 'data' => collect($paginator->items())
                     ->map(
                         fn ($product) =>
@@ -267,4 +286,16 @@ class ProductApiController extends Controller
             ]
         );
     }
+
+    private function csv(mixed $value): array
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map('trim', explode(',', $value))
+        ));
+    }
+
 }
