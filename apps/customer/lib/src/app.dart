@@ -16,6 +16,7 @@ class _FastShebaAppState extends State<FastShebaApp> {
     super.initState();
     state = AppState(ApiClient());
   }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

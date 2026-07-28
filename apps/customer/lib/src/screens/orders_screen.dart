@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/app_state.dart';
+import 'order_detail_screen.dart';
 
 class OrdersScreen extends StatelessWidget {
   const OrdersScreen({
@@ -15,7 +16,9 @@ class OrdersScreen extends StatelessWidget {
     if (!state.signedIn) {
       return const SafeArea(
         child: Center(
-          child: Text('Sign in to view your orders.'),
+          child: Text(
+            'Sign in to view your orders.',
+          ),
         ),
       );
     }
@@ -38,17 +41,34 @@ class OrdersScreen extends StatelessWidget {
               const Padding(
                 padding: EdgeInsets.only(top: 100),
                 child: Center(
-                  child: Text('No orders yet.'),
+                  child: Text(
+                    'No orders yet.',
+                  ),
                 ),
               ),
             ...state.orders.map(
               (order) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(
+                  bottom: 12,
+                ),
                 child: Card(
                   child: ListTile(
-                    contentPadding: const EdgeInsets.all(16),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => OrderDetailScreen(
+                          state: state,
+                          orderSlug: order['slug']?.toString() ?? '',
+                          initialOrder: order,
+                        ),
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.all(
+                      16,
+                    ),
                     leading: const CircleAvatar(
-                      child: Icon(Icons.receipt_long),
+                      child: Icon(
+                        Icons.receipt_long,
+                      ),
                     ),
                     title: Text(
                       order['slug']?.toString() ?? '',
@@ -58,11 +78,19 @@ class OrdersScreen extends StatelessWidget {
                           order['status']?.toString() ??
                           '',
                     ),
-                    trailing: Text(
-                      'à§³${order['final_total'] ?? '0.00'}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                      ),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '৳${order['final_total'] ?? '0.00'}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right,
+                        ),
+                      ],
                     ),
                   ),
                 ),

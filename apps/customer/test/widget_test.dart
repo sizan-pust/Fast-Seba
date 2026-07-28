@@ -9,17 +9,23 @@ void main() {
     'orders screen asks unauthenticated users to sign in',
     (WidgetTester tester) async {
       final state = AppState(
-        ApiClient(baseUrl: 'http://127.0.0.1'),
+        ApiClient(
+          baseUrl: 'http://127.0.0.1',
+        ),
       );
 
       await tester.pumpWidget(
         MaterialApp(
-          home: OrdersScreen(state: state),
+          home: OrdersScreen(
+            state: state,
+          ),
         ),
       );
 
       expect(
-        find.text('Sign in to view your orders.'),
+        find.text(
+          'Sign in to view your orders.',
+        ),
         findsOneWidget,
       );
     },

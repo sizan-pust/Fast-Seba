@@ -12,6 +12,9 @@ class DatabaseSeeder extends Seeder
             FoundationSeeder::class,
             AuthProviderSeeder::class,
             CatalogueInventorySeeder::class,
+            CommerceSeeder::class,
+            OrderPaymentSeeder::class,
+            DeliveryReturnSeeder::class,
         ]);
     }
 }

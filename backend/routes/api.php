@@ -144,3 +144,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
 require __DIR__.'/commerce.php';
 
 require __DIR__.'/orders.php';
+
+
+require __DIR__.'/delivery.php';
