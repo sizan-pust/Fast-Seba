@@ -1,0 +1,235 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Banner;
+use App\Models\FeaturedSection;
+use App\Models\Product;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+
+class GrowthContentService
+{
+    public function zoneId(?float $latitude, ?float $longitude): ?int
+    {
+        if ($latitude === null || $longitude === null) {
+            return null;
+        }
+
+        return DeliveryZoneService::getZonesAtPoint(
+            $latitude,
+            $longitude
+        )['zone_id'];
+    }
+
+    public function banners(
+        ?int $zoneId = null,
+        ?string $position = null,
+        ?int $categoryId = null
+    ): Collection {
+        return Banner::query()
+            ->where('visibility_status', 'published')
+            ->where(function (Builder $query): void {
+                $query->whereNull('starts_at')
+                    ->orWhere('starts_at', '<=', now());
+            })
+            ->where(function (Builder $query): void {
+                $query->whereNull('ends_at')
+                    ->orWhere('ends_at', '>=', now());
+            })
+            ->when($position, fn (Builder $query) => $query->where('position', $position))
+            ->when($categoryId, function (Builder $query, int $categoryId): void {
+                $query->where(function (Builder $scope) use ($categoryId): void {
+                    $scope->where('scope_type', 'global')
+                        ->orWhere(function (Builder $categoryScope) use ($categoryId): void {
+                            $categoryScope->where('scope_type', 'category')
+                                ->where('scope_id', $categoryId);
+                        });
+                });
+            })
+            ->when($zoneId, function (Builder $query, int $zoneId): void {
+                $query->where(function (Builder $zoneQuery) use ($zoneId): void {
+                    $zoneQuery->whereDoesntHave('zones')
+                        ->orWhereHas(
+                            'zones',
+                            fn (Builder $relation) => $relation->where(
+                                'delivery_zones.id',
+                                $zoneId
+                            )
+                        );
+                });
+            })
+            ->with(['product', 'category', 'brand', 'zones'])
+            ->orderBy('display_order')
+            ->get()
+            ->map(fn (Banner $banner) => [
+                'id' => $banner->id,
+                'type' => $banner->type,
+                'title' => $banner->title,
+                'slug' => $banner->slug,
+                'position' => $banner->position,
+                'custom_url' => $banner->custom_url,
+                'image' => $banner->imageUrl(),
+                'product_id' => $banner->product_id,
+                'category_id' => $banner->category_id,
+                'brand_id' => $banner->brand_id,
+                'metadata' => $banner->metadata ?? [],
+            ]);
+    }
+
+    public function sections(?int $zoneId = null): Collection
+    {
+        return FeaturedSection::query()
+            ->where('status', 'active')
+            ->where(function (Builder $query): void {
+                $query->whereNull('starts_at')
+                    ->orWhere('starts_at', '<=', now());
+            })
+            ->where(function (Builder $query): void {
+                $query->whereNull('ends_at')
+                    ->orWhere('ends_at', '>=', now());
+            })
+            ->when($zoneId, function (Builder $query, int $zoneId): void {
+                $query->where(function (Builder $zoneQuery) use ($zoneId): void {
+                    $zoneQuery->whereDoesntHave('zones')
+                        ->orWhereHas(
+                            'zones',
+                            fn (Builder $relation) => $relation->where(
+                                'delivery_zones.id',
+                                $zoneId
+                            )
+                        );
+                });
+            })
+            ->with(['zones'])
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (FeaturedSection $section) => $this->sectionPayload($section, $zoneId));
+    }
+
+    public function section(
+        string $slug,
+        ?int $zoneId = null
+    ): array {
+        $section = FeaturedSection::query()
+            ->where('slug', $slug)
+            ->where('status', 'active')
+            ->with('zones')
+            ->firstOrFail();
+
+        if (
+            $zoneId
+            && $section->zones->isNotEmpty()
+            && ! $section->zones->contains('id', $zoneId)
+        ) {
+            abort(404);
+        }
+
+        return $this->sectionPayload($section, $zoneId);
+    }
+
+    private function sectionPayload(
+        FeaturedSection $section,
+        ?int $zoneId
+    ): array {
+        $products = $this->sectionProducts($section, $zoneId);
+
+        return [
+            'id' => $section->id,
+            'title' => $section->title,
+            'slug' => $section->slug,
+            'short_description' => $section->short_description,
+            'style' => $section->style,
+            'section_type' => $section->section_type,
+            'background_type' => $section->background_type,
+            'background_color' => $section->background_color,
+            'background_image' => $section->backgroundImageUrl(),
+            'text_color' => $section->text_color,
+            'sort_order' => $section->sort_order,
+            'products' => $products,
+        ];
+    }
+
+    private function sectionProducts(
+        FeaturedSection $section,
+        ?int $zoneId
+    ): Collection {
+        $limit = max(1, min(50, (int) $section->product_limit));
+
+        if ($section->section_type === 'manual') {
+            $ids = $section->products()
+                ->limit($limit)
+                ->pluck('products.id');
+
+            return $this->productQuery($zoneId)
+                ->whereIn('products.id', $ids)
+                ->get()
+                ->sortBy(fn (Product $product) => $ids->search($product->id))
+                ->values()
+                ->map(fn (Product $product) => $this->productPayload($product));
+        }
+
+        $query = $this->productQuery($zoneId);
+
+        if ($section->section_type === 'top_rated') {
+            $query->addSelect([
+                'public_rating' => \App\Models\Review::query()
+                    ->selectRaw('AVG(rating)')
+                    ->whereColumn('reviews.product_id', 'products.id')
+                    ->where('status', 'published'),
+            ])->orderByDesc('public_rating');
+        } elseif ($section->section_type === 'featured') {
+            $query->where('featured', true)->latest();
+        } else {
+            $query->latest();
+        }
+
+        return $query
+            ->limit($limit)
+            ->get()
+            ->map(fn (Product $product) => $this->productPayload($product));
+    }
+
+    private function productQuery(?int $zoneId): Builder
+    {
+        return Product::query()
+            ->where('status', 'active')
+            ->where('verification_status', 'approved')
+            ->when($zoneId, function (Builder $query, int $zoneId): void {
+                $query->whereHas(
+                    'variants.storeProductVariants.store.zones',
+                    fn (Builder $zoneQuery) => $zoneQuery->where(
+                        'delivery_zones.id',
+                        $zoneId
+                    )
+                );
+            })
+            ->with([
+                'category',
+                'brand',
+                'variants.storeProductVariants.store',
+            ]);
+    }
+
+    private function productPayload(Product $product): array
+    {
+        $inventory = $product->variants
+            ->flatMap(fn ($variant) => $variant->storeProductVariants)
+            ->where('status', 'active')
+            ->where('stock', '>', 0)
+            ->sortBy(fn ($item) => (float) ($item->special_price ?? $item->price))
+            ->first();
+
+        return [
+            'id' => $product->id,
+            'title' => $product->title,
+            'slug' => $product->slug,
+            'image' => $product->mainImageUrl(),
+            'category' => $product->category?->title,
+            'brand' => $product->brand?->title,
+            'price' => $inventory?->price,
+            'special_price' => $inventory?->special_price,
+            'stock' => $inventory?->stock ?? 0,
+        ];
+    }
+}
