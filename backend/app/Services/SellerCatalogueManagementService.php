@@ -20,7 +20,8 @@ use Illuminate\Validation\ValidationException;
 class SellerCatalogueManagementService
 {
     public function __construct(
-        protected InventoryService $inventoryService
+        protected InventoryService $inventoryService,
+        protected SubscriptionService $subscriptions
     ) {
     }
 
@@ -55,6 +56,17 @@ class SellerCatalogueManagementService
         array $data
     ): Store {
         return DB::transaction(function () use ($seller, $data): Store {
+            $eligibility = $this->subscriptions->eligibility(
+                $seller,
+                'stores'
+            );
+
+            if (! $eligibility['eligible']) {
+                throw ValidationException::withMessages([
+                    'subscription' => $eligibility['reason'],
+                ]);
+            }
+
             $zoneIds = $data['zone_ids'] ?? [];
             unset($data['zone_ids']);
 
@@ -68,6 +80,11 @@ class SellerCatalogueManagementService
             if ($zoneIds) {
                 $store->zones()->sync($zoneIds);
             }
+
+            $this->subscriptions->consume(
+                $seller,
+                'stores'
+            );
 
             return $store->fresh('zones');
         });
@@ -155,6 +172,17 @@ class SellerCatalogueManagementService
         array $data
     ): Product {
         return DB::transaction(function () use ($seller, $actor, $data): Product {
+            $eligibility = $this->subscriptions->eligibility(
+                $seller,
+                'products'
+            );
+
+            if (! $eligibility['eligible']) {
+                throw ValidationException::withMessages([
+                    'subscription' => $eligibility['reason'],
+                ]);
+            }
+
             $variants = $data['variants'];
             $categoryIds = $data['category_ids'] ?? [];
             unset($data['variants'], $data['category_ids']);
@@ -188,6 +216,11 @@ class SellerCatalogueManagementService
                     $index === 0
                 );
             }
+
+            $this->subscriptions->consume(
+                $seller,
+                'products'
+            );
 
             return $product->fresh($this->productRelations());
         });

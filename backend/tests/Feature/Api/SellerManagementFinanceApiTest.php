@@ -21,6 +21,7 @@ use App\Models\Wallet;
 use Database\Seeders\CatalogueInventorySeeder;
 use Database\Seeders\CommerceSeeder;
 use Database\Seeders\DeliveryReturnSeeder;
+use Database\Seeders\FinalOperationsSeeder;
 use Database\Seeders\FoundationSeeder;
 use Database\Seeders\OrderPaymentSeeder;
 use Database\Seeders\SellerManagementFinanceSeeder;
@@ -50,6 +51,7 @@ class SellerManagementFinanceApiTest extends TestCase
         $this->seed(OrderPaymentSeeder::class);
         $this->seed(DeliveryReturnSeeder::class);
         $this->seed(SellerManagementFinanceSeeder::class);
+        $this->seed(FinalOperationsSeeder::class);
 
         $this->sellerUser = User::query()
             ->where('email', 'seller@fastsheba.test')

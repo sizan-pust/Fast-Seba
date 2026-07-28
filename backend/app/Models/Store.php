@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
@@ -63,6 +64,7 @@ class Store extends Model implements HasMedia
         'pos_upi_payee_name',
         'pos_payment_config',
         'receipt_template',
+        'pos_enabled',
         'allows_pickup',
         'pickup_instructions',
     ];
@@ -93,6 +95,7 @@ class Store extends Model implements HasMedia
             'is_recommended' => 'boolean',
             'pos_payment_config' => 'array',
             'receipt_template' => 'array',
+            'pos_enabled' => 'boolean',
             'allows_pickup' => 'boolean',
         ];
     }
@@ -104,8 +107,32 @@ class Store extends Model implements HasMedia
 
     public function zones(): BelongsToMany
     {
-        return $this->belongsToMany(DeliveryZone::class, 'store_zone', 'store_id', 'zone_id')
-            ->withTimestamps();
+        return $this->belongsToMany(
+            DeliveryZone::class,
+            'store_zone',
+            'store_id',
+            'zone_id'
+        )->withTimestamps();
+    }
+
+    public function storeProductVariants(): HasMany
+    {
+        return $this->hasMany(StoreProductVariant::class);
+    }
+
+    public function addonInventory(): HasMany
+    {
+        return $this->hasMany(StoreAddonItem::class);
+    }
+
+    public function parkedSales(): HasMany
+    {
+        return $this->hasMany(PosParkedSale::class);
+    }
+
+    public function posRefunds(): HasMany
+    {
+        return $this->hasMany(PosRefund::class);
     }
 
     public function registerMediaCollections(): void
@@ -127,10 +154,18 @@ class Store extends Model implements HasMedia
                 while (
                     self::query()
                         ->where('slug', $slug)
-                        ->when($store->exists, fn ($query) => $query->where('id', '!=', $store->id))
+                        ->when(
+                            $store->exists,
+                            fn ($query) =>
+                                $query->where(
+                                    'id',
+                                    '!=',
+                                    $store->id
+                                )
+                        )
                         ->exists()
                 ) {
-                    $slug = "{$base}-{$counter}";
+                    $slug = $base.'-'.$counter;
                     $counter++;
                 }
 

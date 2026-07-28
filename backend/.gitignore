@@ -27,3 +27,5 @@ _phase*_backups/
 .env.testing
 
 storage/app/private/settings/*.json
+
+_phase9_v3_backups/
