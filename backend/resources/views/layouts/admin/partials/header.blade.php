@@ -13,7 +13,7 @@
             </div>
 
             <div class="nav-item d-none d-md-flex me-3">
-                <a href="{{ route('admin.module', ['module' => 'notifications']) }}" class="nav-link px-0 position-relative" title="Notifications">
+                <a href="{{ route('admin.manage.notifications.index') }}" class="nav-link px-0 position-relative" title="Notifications">
                     <x-admin.icon name="bell" />
                     @if ($adminUnreadNotifications > 0)
                         <span class="badge bg-red text-red-fg badge-notification badge-pill">{{ min($adminUnreadNotifications, 99) }}</span>

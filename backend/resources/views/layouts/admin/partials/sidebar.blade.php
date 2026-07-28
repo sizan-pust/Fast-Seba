@@ -35,8 +35,9 @@
                                 $url = route($item['route']);
                                 $active = request()->routeIs($item['active'] ?? $item['route']);
                             } elseif ($isLive) {
-                                $url = route('admin.core.'.$item['module'].'.index');
-                                $active = request()->routeIs('admin.core.'.$item['module'].'.*');
+                                $group = $item['group'] ?? 'core';
+                                $url = route('admin.'.$group.'.'.$item['module'].'.index');
+                                $active = request()->routeIs('admin.'.$group.'.'.$item['module'].'.*');
                             } else {
                                 $url = route('admin.module', ['module' => $item['module']]);
                                 $active = request()->routeIs('admin.module')

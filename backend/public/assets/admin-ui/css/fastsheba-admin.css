@@ -163,3 +163,16 @@ body { min-height: 100vh; }
     .fastsheba-sidebar-logo { width: 140px; height: 52px; }
     .fastsheba-sidebar-logo img { width: 145px; height: 145px; }
 }
+
+.admin-detail-value {
+    white-space: pre-wrap;
+}
+
+.admin-table-toolbar .nav-pills .nav-link {
+    padding: .45rem .8rem;
+}
+
+.font-monospace {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco,
+        Consolas, "Liberation Mono", "Courier New", monospace;
+}

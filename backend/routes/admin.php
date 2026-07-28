@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminCoreResourceController;
+use App\Http\Controllers\Admin\AdminEngagementFinanceController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminModuleController;
 use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Middleware\EnsureAdminSession;
 use App\Services\Admin\AdminCoreResourceService;
+use App\Services\Admin\AdminEngagementFinanceService;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->name('admin.')->group(function (): void {
@@ -47,6 +49,41 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
             ->whereNumber('id')->name('returns.refund');
         Route::post('prescriptions/{id}/review', [AdminCoreResourceController::class, 'reviewPrescription'])
             ->whereNumber('id')->name('prescriptions.review');
+
+        foreach (AdminEngagementFinanceService::LIVE_MODULES as $module) {
+            Route::get($module, [AdminEngagementFinanceController::class, 'index'])
+                ->defaults('module', $module)
+                ->name('manage.'.$module.'.index');
+            Route::get($module.'/create', [AdminEngagementFinanceController::class, 'create'])
+                ->defaults('module', $module)
+                ->name('manage.'.$module.'.create');
+            Route::post($module, [AdminEngagementFinanceController::class, 'store'])
+                ->defaults('module', $module)
+                ->name('manage.'.$module.'.store');
+            Route::post($module.'/page-action', [AdminEngagementFinanceController::class, 'pageAction'])
+                ->defaults('module', $module)
+                ->name('manage.'.$module.'.page-action');
+            Route::get($module.'/{id}', [AdminEngagementFinanceController::class, 'show'])
+                ->defaults('module', $module)
+                ->whereNumber('id')
+                ->name('manage.'.$module.'.show');
+            Route::get($module.'/{id}/edit', [AdminEngagementFinanceController::class, 'edit'])
+                ->defaults('module', $module)
+                ->whereNumber('id')
+                ->name('manage.'.$module.'.edit');
+            Route::put($module.'/{id}', [AdminEngagementFinanceController::class, 'update'])
+                ->defaults('module', $module)
+                ->whereNumber('id')
+                ->name('manage.'.$module.'.update');
+            Route::delete($module.'/{id}', [AdminEngagementFinanceController::class, 'destroy'])
+                ->defaults('module', $module)
+                ->whereNumber('id')
+                ->name('manage.'.$module.'.destroy');
+            Route::post($module.'/{id}/action', [AdminEngagementFinanceController::class, 'action'])
+                ->defaults('module', $module)
+                ->whereNumber('id')
+                ->name('manage.'.$module.'.action');
+        }
 
         Route::get('module/{module}', [AdminModuleController::class, 'show'])
             ->where('module', '[a-z0-9\-]+')
