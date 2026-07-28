@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             CommerceSeeder::class,
             OrderPaymentSeeder::class,
             DeliveryReturnSeeder::class,
+            SellerManagementFinanceSeeder::class,
         ]);
     }
 }

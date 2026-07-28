@@ -147,3 +147,6 @@ require __DIR__.'/orders.php';
 
 
 require __DIR__.'/delivery.php';
+
+
+require __DIR__.'/management.php';
