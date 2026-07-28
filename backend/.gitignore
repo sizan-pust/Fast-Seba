@@ -29,3 +29,4 @@ _phase*_backups/
 storage/app/private/settings/*.json
 
 _phase9_v3_backups/
+_admin_a_backups/

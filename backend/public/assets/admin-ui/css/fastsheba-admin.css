@@ -1,0 +1,180 @@
+:root {
+    --fastsheba-primary: #206bc4;
+    --fastsheba-sidebar: #182433;
+}
+
+html {
+    scrollbar-gutter: stable;
+}
+
+body {
+    min-height: 100vh;
+}
+
+#admin-sidebar {
+    --tblr-navbar-bg: var(--fastsheba-sidebar);
+}
+
+.fast-sheba-wordmark,
+.fastsheba-brand,
+.fastsheba-auth-brand {
+    text-decoration: none;
+}
+
+.fastsheba-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: .75rem;
+    color: #fff;
+}
+
+.fastsheba-brand:hover {
+    color: #fff;
+}
+
+.fastsheba-brand-mark {
+    display: inline-flex;
+    width: 2.35rem;
+    height: 2.35rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: .65rem;
+    background: linear-gradient(135deg, #4299e1, #206bc4);
+    color: #fff;
+    font-size: .85rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+    box-shadow: 0 .35rem 1.2rem rgba(32, 107, 196, .35);
+}
+
+.fastsheba-brand-name {
+    display: block;
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.fastsheba-brand small {
+    display: block;
+    margin-top: .15rem;
+    color: rgba(255, 255, 255, .6);
+    font-size: .68rem;
+    font-weight: 500;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.fastsheba-auth-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: .75rem;
+    color: inherit;
+}
+
+.fastsheba-auth-brand strong,
+.fastsheba-auth-brand small {
+    display: block;
+    text-align: left;
+}
+
+.fastsheba-auth-brand strong {
+    font-size: 1.25rem;
+}
+
+.fastsheba-auth-brand small {
+    color: var(--tblr-secondary);
+    font-size: .72rem;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.admin-menu-section {
+    padding-top: .25rem !important;
+    padding-bottom: .25rem !important;
+    color: rgba(255, 255, 255, .42) !important;
+    font-size: .67rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.navbar-vertical .navbar-nav .nav-link {
+    border-radius: .5rem;
+    margin: .08rem .5rem;
+}
+
+.navbar-vertical .navbar-nav .nav-link.active {
+    background: rgba(255, 255, 255, .10);
+}
+
+.fastsheba-avatar {
+    background: linear-gradient(135deg, #206bc4, #4299e1);
+    color: #fff;
+    font-weight: 700;
+}
+
+.admin-attention-card {
+    color: inherit;
+    text-decoration: none;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.admin-attention-card:hover {
+    color: inherit;
+    transform: translateY(-2px);
+    box-shadow: var(--tblr-shadow-card-hover);
+}
+
+.admin-status {
+    text-transform: capitalize;
+}
+
+.admin-status-pending,
+.admin-status-requested,
+.admin-status-pending_verification {
+    background: var(--tblr-yellow-lt);
+    color: var(--tblr-yellow);
+}
+
+.admin-status-confirmed,
+.admin-status-approved,
+.admin-status-ready {
+    background: var(--tblr-azure-lt);
+    color: var(--tblr-azure);
+}
+
+.admin-status-preparing,
+.admin-status-assigned,
+.admin-status-out_for_delivery {
+    background: var(--tblr-blue-lt);
+    color: var(--tblr-blue);
+}
+
+.admin-status-delivered,
+.admin-status-completed,
+.admin-status-paid {
+    background: var(--tblr-green-lt);
+    color: var(--tblr-green);
+}
+
+.admin-status-cancelled,
+.admin-status-rejected,
+.admin-status-failed {
+    background: var(--tblr-red-lt);
+    color: var(--tblr-red);
+}
+
+.chart-lg {
+    min-height: 320px;
+}
+
+@media (min-width: 992px) {
+    .navbar-vertical {
+        width: 17rem;
+    }
+
+    .navbar-vertical.navbar-expand-lg ~ .page-wrapper {
+        margin-left: 17rem;
+    }
+}
