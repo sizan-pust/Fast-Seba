@@ -14,27 +14,29 @@ class AdminDashboardTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_can_view_dashboard_and_navigation(): void
+    public function test_admin_can_view_parity_dashboard_and_navigation(): void
     {
         $admin = $this->admin();
 
         $this->actingAs($admin, 'admin')
             ->get('/admin/dashboard')
             ->assertOk()
-            ->assertSee('FastSheba Dashboard')
+            ->assertSee('Welcome Back')
+            ->assertSee('Revenue vs Orders')
+            ->assertSee('Enhanced Commissions')
             ->assertSee('Catalog')
             ->assertSee('Communication')
             ->assertSee('System');
     }
 
-    public function test_admin_module_placeholder_is_available(): void
+    public function test_unfinished_module_placeholder_is_available(): void
     {
         $admin = $this->admin();
 
         $this->actingAs($admin, 'admin')
-            ->get('/admin/module/orders')
+            ->get('/admin/module/support')
             ->assertOk()
-            ->assertSee('Orders')
+            ->assertSee('Support Tickets')
             ->assertSee('The visual shell is ready');
     }
 
@@ -42,8 +44,7 @@ class AdminDashboardTest extends TestCase
     {
         $customer = User::factory()->create([
             'status' => 'active',
-            'access_panel' =>
-                GuardNameEnum::WEB->value,
+            'access_panel' => GuardNameEnum::WEB->value,
         ]);
 
         $this->actingAs($customer, 'admin')
@@ -62,13 +63,10 @@ class AdminDashboardTest extends TestCase
 
         $admin = User::factory()->create([
             'name' => 'FastSheba Admin',
-            'email' => 'dashboard@fastsheba.test',
-            'password' => Hash::make(
-                'Test@123456'
-            ),
+            'email' => 'dashboard-b@fastsheba.test',
+            'password' => Hash::make('Test@123456'),
             'status' => 'active',
-            'access_panel' =>
-                GuardNameEnum::ADMIN->value,
+            'access_panel' => GuardNameEnum::ADMIN->value,
             'email_verified_at' => now(),
         ]);
 

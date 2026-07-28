@@ -1,180 +1,165 @@
 :root {
     --fastsheba-primary: #206bc4;
-    --fastsheba-sidebar: #182433;
+    --fastsheba-sidebar: #1f2d3d;
 }
 
-html {
-    scrollbar-gutter: stable;
-}
+html { scrollbar-gutter: stable; }
+body { min-height: 100vh; }
+#admin-sidebar { --tblr-navbar-bg: var(--fastsheba-sidebar); }
 
-body {
-    min-height: 100vh;
-}
-
-#admin-sidebar {
-    --tblr-navbar-bg: var(--fastsheba-sidebar);
-}
-
-.fast-sheba-wordmark,
-.fastsheba-brand,
-.fastsheba-auth-brand {
-    text-decoration: none;
-}
-
-.fastsheba-brand {
-    display: inline-flex;
-    align-items: center;
-    gap: .75rem;
-    color: #fff;
-}
-
-.fastsheba-brand:hover {
-    color: #fff;
-}
-
-.fastsheba-brand-mark {
-    display: inline-flex;
-    width: 2.35rem;
-    height: 2.35rem;
+.fastsheba-sidebar-logo {
+    width: 174px;
+    height: 68px;
+    display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: .65rem;
-    background: linear-gradient(135deg, #4299e1, #206bc4);
-    color: #fff;
-    font-size: .85rem;
-    font-weight: 800;
-    letter-spacing: .04em;
-    box-shadow: 0 .35rem 1.2rem rgba(32, 107, 196, .35);
+    overflow: hidden;
+    border-radius: .45rem;
+    background: #fff;
 }
 
-.fastsheba-brand-name {
-    display: block;
-    color: #fff;
-    font-size: 1.05rem;
-    font-weight: 700;
-    line-height: 1.1;
+.fastsheba-sidebar-logo img {
+    width: 170px;
+    height: 170px;
+    object-fit: cover;
+    object-position: center 39%;
+    transform: scale(.9);
 }
 
-.fastsheba-brand small {
-    display: block;
-    margin-top: .15rem;
-    color: rgba(255, 255, 255, .6);
-    font-size: .68rem;
-    font-weight: 500;
-    letter-spacing: .05em;
-    text-transform: uppercase;
-}
-
-.fastsheba-auth-brand {
+.fastsheba-auth-logo {
     display: inline-flex;
+    width: 260px;
+    height: 145px;
+    overflow: hidden;
     align-items: center;
-    gap: .75rem;
-    color: inherit;
+    justify-content: center;
+    border-radius: .75rem;
+    background: #fff;
+    box-shadow: 0 .4rem 1.4rem rgba(24, 36, 51, .08);
 }
 
-.fastsheba-auth-brand strong,
-.fastsheba-auth-brand small {
-    display: block;
-    text-align: left;
-}
-
-.fastsheba-auth-brand strong {
-    font-size: 1.25rem;
-}
-
-.fastsheba-auth-brand small {
-    color: var(--tblr-secondary);
-    font-size: .72rem;
-    letter-spacing: .05em;
-    text-transform: uppercase;
+.fastsheba-auth-logo img {
+    width: 260px;
+    height: 260px;
+    object-fit: cover;
+    object-position: center 44%;
 }
 
 .admin-menu-section {
-    padding-top: .25rem !important;
-    padding-bottom: .25rem !important;
-    color: rgba(255, 255, 255, .42) !important;
-    font-size: .67rem;
+    padding-top: .2rem !important;
+    padding-bottom: .2rem !important;
+    color: rgba(255, 255, 255, .46) !important;
+    font-size: .66rem;
     font-weight: 700;
-    letter-spacing: .08em;
+    letter-spacing: .075em;
     text-transform: uppercase;
 }
 
 .navbar-vertical .navbar-nav .nav-link {
-    border-radius: .5rem;
-    margin: .08rem .5rem;
+    min-height: 2.5rem;
+    margin: .02rem .45rem;
+    padding-top: .45rem;
+    padding-bottom: .45rem;
+    border-radius: .4rem;
+    font-size: .91rem;
 }
 
 .navbar-vertical .navbar-nav .nav-link.active {
     background: rgba(255, 255, 255, .10);
 }
 
+.navbar-vertical .navbar-nav .nav-link-icon {
+    width: 1.55rem;
+    margin-right: .55rem;
+}
+
+.fastsheba-topbar { min-height: 3.65rem; }
 .fastsheba-avatar {
     background: linear-gradient(135deg, #206bc4, #4299e1);
     color: #fff;
     font-weight: 700;
 }
 
-.admin-attention-card {
-    color: inherit;
-    text-decoration: none;
-    transition: transform .15s ease, box-shadow .15s ease;
+.page-body { margin-top: 1rem; }
+.admin-zone-card { box-shadow: none; }
+.admin-zone-select { min-width: 200px; width: auto; }
+.admin-dashboard-grid { --tblr-gutter-x: 1rem; --tblr-gutter-y: 1rem; }
+.admin-welcome-card,
+.admin-mini-chart-card { min-height: 250px; }
+.admin-welcome-card .card-body,
+.admin-mini-chart-card .card-body { padding: 1.3rem 1.4rem; }
+.admin-welcome-illustration svg { width: 100%; max-width: 235px; }
+.admin-compact-stat .card-body { min-height: 84px; padding: 1rem; }
+.admin-resource-header { margin-bottom: 1rem; }
+.admin-table-toolbar { padding: .85rem 1rem; }
+.admin-detail-list { margin-bottom: 0; }
+.admin-detail-list dt,
+.admin-detail-list dd {
+    padding-top: .45rem;
+    padding-bottom: .45rem;
+    margin-bottom: 0;
+    border-bottom: 1px dashed var(--tblr-border-color);
 }
+.pagination { margin-bottom: 0; }
 
-.admin-attention-card:hover {
-    color: inherit;
-    transform: translateY(-2px);
-    box-shadow: var(--tblr-shadow-card-hover);
-}
-
-.admin-status {
-    text-transform: capitalize;
-}
-
+.admin-status { text-transform: capitalize; }
 .admin-status-pending,
 .admin-status-requested,
-.admin-status-pending_verification {
+.admin-status-under_review,
+.admin-status-awaiting_seller_response {
     background: var(--tblr-yellow-lt);
     color: var(--tblr-yellow);
 }
-
 .admin-status-confirmed,
 .admin-status-approved,
-.admin-status-ready {
+.admin-status-ready,
+.admin-status-ready_for_pickup,
+.admin-status-assigned,
+.admin-status-online,
+.admin-status-active,
+.admin-status-published {
     background: var(--tblr-azure-lt);
     color: var(--tblr-azure);
 }
-
 .admin-status-preparing,
-.admin-status-assigned,
-.admin-status-out_for_delivery {
+.admin-status-picked_up,
+.admin-status-out_for_delivery,
+.admin-status-on_delivery,
+.admin-status-in_progress {
     background: var(--tblr-blue-lt);
     color: var(--tblr-blue);
 }
-
 .admin-status-delivered,
 .admin-status-completed,
-.admin-status-paid {
+.admin-status-paid,
+.admin-status-refund_processed,
+.admin-status-fulfilled,
+.admin-status-available {
     background: var(--tblr-green-lt);
     color: var(--tblr-green);
 }
-
 .admin-status-cancelled,
 .admin-status-rejected,
-.admin-status-failed {
+.admin-status-failed,
+.admin-status-blocked,
+.admin-status-suspended {
     background: var(--tblr-red-lt);
     color: var(--tblr-red);
 }
-
-.chart-lg {
-    min-height: 320px;
+.admin-status-inactive,
+.admin-status-offline,
+.admin-status-draft,
+.admin-status-unpaid {
+    background: var(--tblr-secondary-lt);
+    color: var(--tblr-secondary);
 }
 
 @media (min-width: 992px) {
-    .navbar-vertical {
-        width: 17rem;
-    }
+    .navbar-vertical { width: 17rem; }
+    .navbar-vertical.navbar-expand-lg ~ .page-wrapper { margin-left: 17rem; }
+}
 
-    .navbar-vertical.navbar-expand-lg ~ .page-wrapper {
-        margin-left: 17rem;
-    }
+@media (max-width: 991.98px) {
+    .fastsheba-sidebar-logo { width: 140px; height: 52px; }
+    .fastsheba-sidebar-logo img { width: 145px; height: 145px; }
 }

@@ -7,26 +7,14 @@
     <div class="page page-center">
         <div class="container container-tight py-4">
             <div class="text-center mb-4">
-                <a
-                    href="{{ route('admin.login') }}"
-                    class="fastsheba-auth-brand"
-                >
-                    <span class="fastsheba-brand-mark">FS</span>
-                    <span>
-                        <strong>
-                            {{ $systemSettings['appName'] ?? 'FastSheba' }}
-                        </strong>
-                        <small>Admin Console</small>
-                    </span>
+                <a href="{{ route('admin.login') }}" class="fastsheba-auth-logo">
+                    <img src="{{ asset('assets/admin-ui/images/fastsheba-logo.png') }}" alt="FastSheba">
                 </a>
             </div>
-
             @include('layouts.admin.partials.alerts')
-
             @yield('content')
         </div>
     </div>
-
     @include('layouts.admin.partials.scripts')
 </body>
 </html>
