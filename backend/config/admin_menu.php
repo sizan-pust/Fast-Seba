@@ -6,7 +6,7 @@ return [
             'title' => 'Overview',
             'items' => [
                 ['title' => 'Dashboard', 'icon' => 'dashboard', 'route' => 'admin.dashboard', 'active' => 'admin.dashboard', 'live' => true],
-                ['title' => 'POS Dashboard', 'icon' => 'chart', 'module' => 'pos-dashboard', 'permission' => 'orders.view', 'live' => false],
+                ['title' => 'POS Dashboard', 'icon' => 'chart', 'module' => 'pos-dashboard', 'permission' => 'orders.view', 'live' => true, 'group' => 'system'],
                 ['title' => 'Orders', 'icon' => 'package', 'module' => 'orders', 'permission' => 'orders.view', 'live' => true, 'group' => 'core'],
                 ['title' => 'Return Requests', 'icon' => 'return', 'module' => 'returns', 'permission' => 'returns.view', 'live' => true, 'group' => 'core'],
                 ['title' => 'Dispatch Management', 'icon' => 'truck', 'module' => 'dispatch', 'permission' => 'orders.manage', 'live' => true, 'group' => 'core'],
@@ -66,11 +66,11 @@ return [
         [
             'title' => 'System',
             'items' => [
-                ['title' => 'Roles & Users', 'icon' => 'shield', 'module' => 'roles-users', 'permission' => 'roles.view', 'live' => false],
-                ['title' => 'Settings', 'icon' => 'settings', 'module' => 'settings', 'permission' => 'settings.manage', 'live' => false],
-                ['title' => 'Bulk Uploads', 'icon' => 'upload', 'module' => 'bulk-uploads', 'permission' => 'bulk_uploads.view', 'live' => false],
-                ['title' => 'Audit Logs', 'icon' => 'activity', 'module' => 'audit-logs', 'permission' => 'audit_logs.view', 'live' => false],
-                ['title' => 'System Operations', 'icon' => 'server', 'module' => 'system-operations', 'permission' => 'system.manage', 'live' => false],
+                ['title' => 'Roles & Users', 'icon' => 'shield', 'module' => 'roles-users', 'permission' => 'roles.view', 'live' => true, 'group' => 'system'],
+                ['title' => 'Settings', 'icon' => 'settings', 'module' => 'settings', 'permission' => 'settings.manage', 'live' => true, 'group' => 'system'],
+                ['title' => 'Bulk Uploads', 'icon' => 'upload', 'module' => 'bulk-uploads', 'permission' => 'bulk_uploads.view', 'live' => true, 'group' => 'system'],
+                ['title' => 'Audit Logs', 'icon' => 'activity', 'module' => 'audit-logs', 'permission' => 'audit_logs.view', 'live' => true, 'group' => 'system'],
+                ['title' => 'System Operations', 'icon' => 'server', 'module' => 'system-operations', 'permission' => 'system.manage', 'live' => true, 'group' => 'system'],
             ],
         ],
     ],

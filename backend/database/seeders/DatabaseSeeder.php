@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             SellerManagementFinanceSeeder::class,
             GrowthSupportPharmacySeeder::class,
             FinalOperationsSeeder::class,
+            SellerPanelSeeder::class,
         ]);
     }
 }

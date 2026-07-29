@@ -1,0 +1,13 @@
+:root { --seller-accent: #16a34a; --seller-accent-soft: rgba(22,163,74,.12); }
+.seller-sidebar { background: linear-gradient(180deg,#13283a 0%,#0d1f2f 100%); }
+.seller-sidebar .nav-link.active { background: rgba(34,197,94,.18); color:#fff; box-shadow: inset 3px 0 0 #22c55e; }
+.seller-sidebar .nav-link:hover { background: rgba(255,255,255,.07); }
+.seller-business-summary { border-bottom: 1px solid rgba(255,255,255,.08); }
+.seller-avatar { background: var(--seller-accent); color:#fff; }
+.seller-topbar { border-bottom: 1px solid rgba(98,105,118,.16); }
+.seller-stat-card { border-top: 3px solid var(--seller-accent); }
+.seller-chart-bar { background: linear-gradient(180deg,#22c55e,#15803d); border-radius:5px 5px 0 0; min-height:4px; }
+.seller-auth-page { background: radial-gradient(circle at top,rgba(34,197,94,.12),transparent 45%),var(--tblr-body-bg); }
+.seller-action-card { border-left:3px solid var(--seller-accent); }
+.seller-table-empty { padding:3rem 1rem!important; text-align:center; color:var(--tblr-secondary); }
+@media (min-width: 992px){ .seller-sidebar { width:260px; } }

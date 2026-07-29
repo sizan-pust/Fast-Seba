@@ -3,13 +3,19 @@
 @section('title', $title)
 
 @section('content')
+    @php
+        $routeGroup = $routeGroup ?? 'manage';
+        $editable = $editable ?? $edit ?? false;
+        $deletable = $deletable ?? $delete ?? false;
+        $query = $query ?? [];
+    @endphp
     <div class="page-header d-print-none">
         <div class="row g-2 align-items-center">
             <div class="col">
                 <div class="page-pretitle">
                     <a
                         href="{{ route(
-                            'admin.manage.'.$module.'.index',
+                            'admin.'.$routeGroup.'.'.$module.'.index',
                             $query
                         ) }}"
                         class="text-secondary"
@@ -26,7 +32,7 @@
                     @if ($editable)
                         <a
                             href="{{ route(
-                                'admin.manage.'.$module.'.edit',
+                                'admin.'.$routeGroup.'.'.$module.'.edit',
                                 array_merge(['id' => $recordId], $query)
                             ) }}"
                             class="btn btn-primary"
@@ -36,7 +42,7 @@
                     @endif
                     <a
                         href="{{ route(
-                            'admin.manage.'.$module.'.index',
+                            'admin.'.$routeGroup.'.'.$module.'.index',
                             $query
                         ) }}"
                         class="btn btn-outline-secondary"
@@ -116,7 +122,7 @@
                     <form
                         method="POST"
                         action="{{ route(
-                            'admin.manage.'.$module.'.action',
+                            'admin.'.$routeGroup.'.'.$module.'.action',
                             array_merge(['id' => $recordId], $query)
                         ) }}"
                         class="card mb-3"
@@ -219,7 +225,7 @@
                     <form
                         method="POST"
                         action="{{ route(
-                            'admin.manage.'.$module.'.destroy',
+                            'admin.'.$routeGroup.'.'.$module.'.destroy',
                             array_merge(['id' => $recordId], $query)
                         ) }}"
                         class="card"

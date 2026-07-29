@@ -3,12 +3,13 @@
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminCoreResourceController;
 use App\Http\Controllers\Admin\AdminEngagementFinanceController;
+use App\Http\Controllers\Admin\AdminSystemCompletionController;
 use App\Http\Controllers\Admin\AdminDashboardController;
-use App\Http\Controllers\Admin\AdminModuleController;
 use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Middleware\EnsureAdminSession;
 use App\Services\Admin\AdminCoreResourceService;
 use App\Services\Admin\AdminEngagementFinanceService;
+use App\Services\Admin\AdminSystemCompletionService;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->name('admin.')->group(function (): void {
@@ -85,8 +86,40 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
                 ->name('manage.'.$module.'.action');
         }
 
-        Route::get('module/{module}', [AdminModuleController::class, 'show'])
-            ->where('module', '[a-z0-9\-]+')
-            ->name('module');
+
+        foreach (AdminSystemCompletionService::LIVE_MODULES as $module) {
+            Route::get($module, [AdminSystemCompletionController::class, 'index'])
+                ->defaults('module', $module)
+                ->name('system.'.$module.'.index');
+            Route::get($module.'/create', [AdminSystemCompletionController::class, 'create'])
+                ->defaults('module', $module)
+                ->name('system.'.$module.'.create');
+            Route::post($module, [AdminSystemCompletionController::class, 'store'])
+                ->defaults('module', $module)
+                ->name('system.'.$module.'.store');
+            Route::post($module.'/page-action', [AdminSystemCompletionController::class, 'pageAction'])
+                ->defaults('module', $module)
+                ->name('system.'.$module.'.page-action');
+            Route::get($module.'/{id}', [AdminSystemCompletionController::class, 'show'])
+                ->defaults('module', $module)
+                ->where('id', '[A-Za-z0-9_\-]+')
+                ->name('system.'.$module.'.show');
+            Route::get($module.'/{id}/edit', [AdminSystemCompletionController::class, 'edit'])
+                ->defaults('module', $module)
+                ->where('id', '[A-Za-z0-9_\-]+')
+                ->name('system.'.$module.'.edit');
+            Route::put($module.'/{id}', [AdminSystemCompletionController::class, 'update'])
+                ->defaults('module', $module)
+                ->where('id', '[A-Za-z0-9_\-]+')
+                ->name('system.'.$module.'.update');
+            Route::delete($module.'/{id}', [AdminSystemCompletionController::class, 'destroy'])
+                ->defaults('module', $module)
+                ->where('id', '[A-Za-z0-9_\-]+')
+                ->name('system.'.$module.'.destroy');
+            Route::post($module.'/{id}/action', [AdminSystemCompletionController::class, 'action'])
+                ->defaults('module', $module)
+                ->where('id', '[A-Za-z0-9_\-]+')
+                ->name('system.'.$module.'.action');
+        }
     });
 });

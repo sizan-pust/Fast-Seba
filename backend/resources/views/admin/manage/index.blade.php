@@ -3,6 +3,13 @@
 @section('title', $title)
 
 @section('content')
+    @php
+        $routeGroup = $routeGroup ?? 'manage';
+        $view = $view ?? $currentTab ?? 'default';
+        $canCreate = $canCreate ?? $create ?? false;
+        $canSync = $canSync ?? false;
+        $pageActions = $pageActions ?? [];
+    @endphp
     <div class="page-header d-print-none admin-resource-header">
         <div class="row g-2 align-items-center">
             <div class="col">
@@ -16,7 +23,7 @@
                     @if ($canSync)
                         <form
                             method="POST"
-                            action="{{ route('admin.manage.'.$module.'.page-action') }}"
+                            action="{{ route('admin.'.$routeGroup.'.'.$module.'.page-action') }}"
                         >
                             @csrf
                             <input
@@ -31,10 +38,46 @@
                         </form>
                     @endif
 
+                    @foreach ($pageActions as $pageAction)
+                        <form
+                            method="POST"
+                            action="{{ route(
+                                'admin.'
+                                    .$routeGroup
+                                    .'.'
+                                    .$module
+                                    .'.page-action',
+                                $view === 'default'
+                                    ? []
+                                    : ['view' => $view]
+                            ) }}"
+                        >
+                            @csrf
+                            <input
+                                type="hidden"
+                                name="action"
+                                value="{{ $pageAction['action'] }}"
+                            >
+                            @if ($view !== 'default')
+                                <input
+                                    type="hidden"
+                                    name="view"
+                                    value="{{ $view }}"
+                                >
+                            @endif
+                            <button
+                                type="submit"
+                                class="btn btn-{{ $pageAction['tone'] ?? 'primary' }}"
+                            >
+                                {{ $pageAction['label'] }}
+                            </button>
+                        </form>
+                    @endforeach
+
                     @if ($canCreate)
                         <a
                             href="{{ route(
-                                'admin.manage.'.$module.'.create',
+                                'admin.'.$routeGroup.'.'.$module.'.create',
                                 ['view' => $view]
                             ) }}"
                             class="btn btn-primary"
@@ -54,7 +97,7 @@
                     @foreach ($tabs as $tab => $label)
                         <a
                             href="{{ route(
-                                'admin.manage.'.$module.'.index',
+                                'admin.'.$routeGroup.'.'.$module.'.index',
                                 ['view' => $tab]
                             ) }}"
                             class="nav-link {{ $view === $tab ? 'active' : '' }}"
@@ -101,7 +144,7 @@
         <div class="card-header admin-table-toolbar">
             <form
                 method="GET"
-                action="{{ route('admin.manage.'.$module.'.index') }}"
+                action="{{ route('admin.'.$routeGroup.'.'.$module.'.index') }}"
                 class="row g-2 w-100 align-items-end"
             >
                 @if ($view !== 'default')
@@ -173,7 +216,7 @@
                     </button>
                     <a
                         href="{{ route(
-                            'admin.manage.'.$module.'.index',
+                            'admin.'.$routeGroup.'.'.$module.'.index',
                             $view === 'default' ? [] : ['view' => $view]
                         ) }}"
                         class="btn btn-outline-secondary btn-sm"
@@ -229,7 +272,7 @@
                                     @if ($index === 0)
                                         <a
                                             href="{{ route(
-                                                'admin.manage.'.$module.'.show',
+                                                'admin.'.$routeGroup.'.'.$module.'.show',
                                                 array_filter([
                                                     'id' => $row['id'],
                                                     'view' => $view === 'default'
@@ -270,7 +313,7 @@
                             <td>
                                 <a
                                     href="{{ route(
-                                        'admin.manage.'.$module.'.show',
+                                        'admin.'.$routeGroup.'.'.$module.'.show',
                                         array_filter([
                                             'id' => $row['id'],
                                             'view' => $view === 'default'

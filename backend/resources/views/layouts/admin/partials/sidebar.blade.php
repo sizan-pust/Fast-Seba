@@ -29,19 +29,17 @@
                         @php
                             $permission = $item['permission'] ?? null;
                             $visible = $isSuperAdmin || ! $permission || $adminUser?->can($permission);
-                            $isLive = (bool) ($item['live'] ?? false);
 
                             if (isset($item['route'])) {
                                 $url = route($item['route']);
                                 $active = request()->routeIs($item['active'] ?? $item['route']);
-                            } elseif ($isLive) {
-                                $group = $item['group'] ?? 'core';
-                                $url = route('admin.'.$group.'.'.$item['module'].'.index');
-                                $active = request()->routeIs('admin.'.$group.'.'.$item['module'].'.*');
                             } else {
-                                $url = route('admin.module', ['module' => $item['module']]);
-                                $active = request()->routeIs('admin.module')
-                                    && request()->route('module') === $item['module'];
+                                $group = $item['group'] ?? 'core';
+                                $routeName = 'admin.'.$group.'.'.$item['module'].'.index';
+                                $url = route($routeName);
+                                $active = request()->routeIs(
+                                    'admin.'.$group.'.'.$item['module'].'.*'
+                                );
                             }
                         @endphp
 
@@ -53,9 +51,6 @@
                                     <x-admin.icon :name="$item['icon'] ?? 'circle'" />
                                 </span>
                                 <span class="nav-link-title">{{ $item['title'] }}</span>
-                                @if (! $isLive && ! isset($item['route']))
-                                    <span class="badge bg-white-lt ms-auto">Next</span>
-                                @endif
                             </a>
                         </li>
                     @endforeach

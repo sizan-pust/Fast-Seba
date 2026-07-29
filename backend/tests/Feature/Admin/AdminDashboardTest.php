@@ -29,15 +29,27 @@ class AdminDashboardTest extends TestCase
             ->assertSee('System');
     }
 
-    public function test_unfinished_module_placeholder_is_available(): void
+    public function test_admin_navigation_uses_direct_live_module_routes(): void
     {
         $admin = $this->admin();
 
         $this->actingAs($admin, 'admin')
-            ->get('/admin/module/support')
+            ->get('/admin/dashboard')
             ->assertOk()
-            ->assertSee('Support Tickets')
-            ->assertSee('The visual shell is ready');
+            ->assertSee(route('admin.system.pos-dashboard.index'), false)
+            ->assertSee(route('admin.system.roles-users.index'), false)
+            ->assertSee(route('admin.system.settings.index'), false)
+            ->assertDontSee('/admin/module/', false)
+            ->assertDontSee('>Next<', false);
+    }
+
+    public function test_legacy_module_placeholder_route_is_removed(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin, 'admin')
+            ->get('/admin/module/roles-users')
+            ->assertNotFound();
     }
 
     public function test_non_admin_session_is_rejected(): void
