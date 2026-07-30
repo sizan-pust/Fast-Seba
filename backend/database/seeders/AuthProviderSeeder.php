@@ -32,10 +32,12 @@ class AuthProviderSeeder extends Seeder
             'smsGateway' => '',
             'fireBaseApiKey' => '',
             'fireBaseAuthDomain' => '',
+            'fireBaseDatabaseURL' => '',
             'fireBaseProjectId' => '',
             'fireBaseStorageBucket' => '',
             'fireBaseMessagingSenderId' => '',
             'fireBaseAppId' => '',
+            'fireBaseMeasurementId' => '',
         ], $setting->value ?? []);
 
         $setting->save();

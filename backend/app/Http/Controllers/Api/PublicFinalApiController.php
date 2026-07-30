@@ -7,6 +7,7 @@ use App\Models\AdCampaign;
 use App\Models\DeliveryBoy;
 use App\Models\ProductCollection;
 use App\Models\Seller;
+use App\Models\SellerFeedback;
 use App\Services\AdvertisingService;
 use App\Services\DeliveryCashFeedbackService;
 use App\Services\TaxCollectionAddonService;
@@ -187,6 +188,49 @@ class PublicFinalApiController extends Controller
                 $request->user(),
                 $data['session_hash'] ?? null
             )
+        );
+    }
+
+
+    public function sellerReviews(
+        Request $request,
+        int $sellerId
+    ): JsonResponse {
+        Seller::query()->findOrFail($sellerId);
+
+        $items = SellerFeedback::query()
+            ->where('seller_id', $sellerId)
+            ->where('status', 'published')
+            ->with('user:id,name')
+            ->latest()
+            ->paginate(
+                min(100, max(1, (int) $request->input('per_page', 15)))
+            );
+
+        return ApiResponseType::sendJsonResponse(
+            true,
+            'Seller reviews fetched.',
+            [
+                'current_page' => $items->currentPage(),
+                'last_page' => $items->lastPage(),
+                'per_page' => $items->perPage(),
+                'total' => $items->total(),
+                'data' => collect($items->items())
+                    ->map(fn (SellerFeedback $feedback) => [
+                        'id' => $feedback->id,
+                        'seller_id' => $feedback->seller_id,
+                        'user_id' => $feedback->user_id,
+                        'rating' => $feedback->rating,
+                        'title' => 'Verified customer review',
+                        'description' => $feedback->comment ?? '',
+                        'seller_reply' => $feedback->seller_reply,
+                        'user' => [
+                            'id' => $feedback->user?->id,
+                            'name' => $feedback->user?->name ?? 'FastSheba customer',
+                        ],
+                        'created_at' => $feedback->created_at?->toIso8601String(),
+                    ])->values(),
+            ]
         );
     }
 

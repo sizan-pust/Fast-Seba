@@ -20,6 +20,10 @@ class ReviewResource extends JsonResource
             'seller_reply' => $this->seller_reply,
             'seller_replied_at' => $this->seller_replied_at?->toIso8601String(),
             'moderation_note' => $this->moderation_note,
+            'review_images' => $this->getMedia('review_images')
+                ->map(fn ($media) => $media->getUrl())
+                ->values()
+                ->all(),
             'user' => $this->user ? [
                 'id' => $this->user->id,
                 'name' => $this->user->name,

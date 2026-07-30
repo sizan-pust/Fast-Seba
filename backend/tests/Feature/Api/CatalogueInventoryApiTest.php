@@ -143,6 +143,16 @@ class CatalogueInventoryApiTest extends TestCase
                 'pack-size'
             );
 
+
+        // Browsing is allowed before a valid delivery location is selected.
+        $this->getJson('/api/products/sidebar-filters')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath(
+                'data.attributes.0.slug',
+                'pack-size'
+            );
+
         $this->getJson(
             '/api/delivery-zone/stores'
             .'?latitude=23.8103'

@@ -112,14 +112,24 @@ class UserEngagementApiController extends Controller
             'rating' => ['required', 'integer', 'between:1,5'],
             'title' => ['nullable', 'string', 'max:255'],
             'comment' => ['required', 'string', 'max:3000'],
+            'review_images' => ['nullable', 'array', 'max:5'],
+            'review_images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
+
+        $review = $this->reviews->create(
+            $request->user(),
+            collect($data)->except('review_images')->all()
+        );
+
+        foreach ($request->file('review_images', []) as $image) {
+            $review->addMedia($image)
+                ->toMediaCollection('review_images');
+        }
 
         return ApiResponseType::sendJsonResponse(
             true,
             'Review submitted.',
-            new ReviewResource(
-                $this->reviews->create($request->user(), $data)
-            ),
+            new ReviewResource($review->fresh(['user', 'product', 'store'])),
             201
         );
     }
@@ -132,14 +142,25 @@ class UserEngagementApiController extends Controller
             'rating' => ['sometimes', 'integer', 'between:1,5'],
             'title' => ['sometimes', 'nullable', 'string', 'max:255'],
             'comment' => ['sometimes', 'string', 'max:3000'],
+            'review_images' => ['nullable', 'array', 'max:5'],
+            'review_images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
+
+        $review = $this->reviews->update(
+            $request->user(),
+            $id,
+            collect($data)->except('review_images')->all()
+        );
+
+        foreach ($request->file('review_images', []) as $image) {
+            $review->addMedia($image)
+                ->toMediaCollection('review_images');
+        }
 
         return ApiResponseType::sendJsonResponse(
             true,
             'Review updated.',
-            new ReviewResource(
-                $this->reviews->update($request->user(), $id, $data)
-            )
+            new ReviewResource($review->fresh(['user', 'product', 'store']))
         );
     }
 

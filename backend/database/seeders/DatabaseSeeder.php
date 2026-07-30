@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             GrowthSupportPharmacySeeder::class,
             FinalOperationsSeeder::class,
             SellerPanelSeeder::class,
+            CustomerWebsiteSeeder::class,
         ]);
     }
 }

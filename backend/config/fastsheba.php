@@ -4,6 +4,13 @@ return [
     'version' => env('FASTSHEBA_VERSION', '1.0.0'),
     'currency' => env('FASTSHEBA_CURRENCY', 'BDT'),
 
+    'firebase' => [
+        'service_account_path' => env(
+            'FIREBASE_CREDENTIALS',
+            storage_path('app/private/firebase/service-account.json')
+        ),
+    ],
+
     'pos' => [
         'parked_sale_days' => (int) env(
             'FASTSHEBA_POS_PARKED_DAYS',

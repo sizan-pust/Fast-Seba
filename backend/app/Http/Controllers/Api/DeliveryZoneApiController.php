@@ -46,11 +46,18 @@ class DeliveryZoneApiController extends Controller
         );
     }
 
-    public function show(int $id): JsonResponse
+    public function show(string $identifier): JsonResponse
     {
         $zone = DeliveryZone::query()
             ->where('status', 'active')
-            ->find($id);
+            ->where(function ($query) use ($identifier): void {
+                $query->where('slug', $identifier);
+
+                if (ctype_digit($identifier)) {
+                    $query->orWhere('id', (int) $identifier);
+                }
+            })
+            ->first();
 
         if (! $zone) {
             return ApiResponseType::sendJsonResponse(

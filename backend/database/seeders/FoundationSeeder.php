@@ -90,34 +90,40 @@ class FoundationSeeder extends Seeder
             ]
         );
 
-        Setting::query()->updateOrCreate(
+        $authenticationSetting = Setting::query()->firstOrCreate(
             ['variable' => 'authentication'],
-            [
-                'value' => [
-                    'customSms' => false,
-                    'firebase' => false,
-                    'googleLogin' => false,
-                    'appleLogin' => false,
-                    'smsGateway' => '',
-                    'fireBaseApiKey' => '',
-                    'fireBaseAuthDomain' => '',
-                    'fireBaseProjectId' => '',
-                    'fireBaseStorageBucket' => '',
-                    'fireBaseMessagingSenderId' => '',
-                    'fireBaseAppId' => '',
-                ],
-            ]
+            ['value' => []]
         );
+        $authenticationSetting->value = array_merge([
+            'customSms' => false,
+            'firebase' => false,
+            'googleLogin' => false,
+            'appleLogin' => false,
+            'smsGateway' => '',
+            'fireBaseApiKey' => '',
+            'fireBaseAuthDomain' => '',
+            'fireBaseDatabaseURL' => '',
+            'fireBaseProjectId' => '',
+            'fireBaseStorageBucket' => '',
+            'fireBaseMessagingSenderId' => '',
+            'fireBaseAppId' => '',
+            'fireBaseMeasurementId' => '',
+        ], is_array($authenticationSetting->value)
+            ? $authenticationSetting->value
+            : []);
+        $authenticationSetting->save();
 
-        Setting::query()->updateOrCreate(
+        $notificationSetting = Setting::query()->firstOrCreate(
             ['variable' => 'notification'],
-            [
-                'value' => [
-                    'vapIdKey' => '',
-                    'firebaseProjectId' => '',
-                ],
-            ]
+            ['value' => []]
         );
+        $notificationSetting->value = array_merge([
+            'vapIdKey' => '',
+            'firebaseProjectId' => '',
+        ], is_array($notificationSetting->value)
+            ? $notificationSetting->value
+            : []);
+        $notificationSetting->save();
 
         Setting::query()->updateOrCreate(
             ['variable' => 'app'],

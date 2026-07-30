@@ -8,6 +8,7 @@ use App\Http\Resources\CategoryResource;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\GlobalProductAttribute;
+use App\Models\Store;
 use App\Services\CatalogueQueryService;
 use App\Types\Api\ApiResponseType;
 use Illuminate\Http\JsonResponse;
@@ -23,8 +24,19 @@ class ProductSidebarApiController extends Controller
     public function filters(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'latitude' => ['required', 'numeric', 'between:-90,90'],
-            'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'latitude' => [
+                'required_with:longitude',
+                'nullable',
+                'numeric',
+                'between:-90,90',
+            ],
+            'longitude' => [
+                'required_with:latitude',
+                'nullable',
+                'numeric',
+                'between:-180,180',
+            ],
+
             'categories' => ['nullable', 'string'],
             'brands' => ['nullable', 'string'],
             'attribute_values' => ['nullable', 'string'],
@@ -52,11 +64,24 @@ class ProductSidebarApiController extends Controller
                 default => null,
             };
         }
+        $hasDeliveryLocation =
+            array_key_exists('latitude', $validated)
+            && array_key_exists('longitude', $validated)
+            && $validated['latitude'] !== null
+            && $validated['longitude'] !== null;
 
-        $storeIds = $this->catalogue->storeIdsForLocation(
-            (float) $validated['latitude'],
-            (float) $validated['longitude']
-        );
+        $storeIds = $hasDeliveryLocation
+            ? $this->catalogue->storeIdsForLocation(
+                (float) $validated['latitude'],
+                (float) $validated['longitude']
+            )
+            : Store::query()
+                ->where('verification_status', 'approved')
+                ->where('visibility_status', 'visible')
+                ->where('status', 'online')
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
 
         $productIds = $this->catalogue
             ->availableProductsQuery($storeIds, $filters)

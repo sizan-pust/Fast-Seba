@@ -35,3 +35,15 @@ _admin_c_backups/
 _admin_c_nullable_date_backups/
 _admin_d_backups/
 _admin_d_view_contract_backups/
+/storage/app/private/firebase/*.json
+
+# FastSheba local/generated files
+vendor/
+node_modules/
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+public/storage
+_*backup*/
+_medicine_catalogue_backups/

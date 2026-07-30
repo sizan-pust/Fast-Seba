@@ -53,6 +53,10 @@ Route::get(
     [PublicFinalApiController::class, 'sellerRating']
 );
 Route::get(
+    'sellers/{sellerId}/reviews',
+    [PublicFinalApiController::class, 'sellerReviews']
+);
+Route::get(
     'delivery-boys/{riderId}/rating',
     [PublicFinalApiController::class, 'riderRating']
 );
@@ -101,6 +105,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::post(
                 'delivery',
                 [CustomerFinalApiController::class, 'createDeliveryFeedback']
+            )->middleware('throttle:10,1');
+            Route::put(
+                'sellers/{id}',
+                [CustomerFinalApiController::class, 'updateSellerFeedback']
+            )->middleware('throttle:10,1');
+            Route::put(
+                'delivery/{id}',
+                [CustomerFinalApiController::class, 'updateDeliveryFeedback']
             )->middleware('throttle:10,1');
             Route::get(
                 'sellers',

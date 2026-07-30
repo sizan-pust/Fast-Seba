@@ -164,6 +164,17 @@ class GrowthPublicApiController extends Controller
                         ->where('product_id', $product->id)
                         ->where('status', 'published')
                         ->count(),
+                    'breakdown' => collect(range(1, 5))
+                        ->mapWithKeys(
+                            fn (int $rating): array => [
+                                (string) $rating => \App\Models\Review::query()
+                                    ->where('product_id', $product->id)
+                                    ->where('status', 'published')
+                                    ->where('rating', $rating)
+                                    ->count(),
+                            ]
+                        )
+                        ->all(),
                 ],
                 'data' => ReviewResource::collection($items->items())
                     ->resolve($request),

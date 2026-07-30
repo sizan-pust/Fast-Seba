@@ -420,10 +420,16 @@ class AuthApiController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Mobile verified successfully.',
+                    // Keep the current Sanctum token when an authenticated
+                    // customer verifies or changes the phone number.
+                    'access_token' => $request->bearerToken(),
+                    // Backward-compatible alias for older clients.
                     'token' => $request->bearerToken(),
+                    'token_type' => 'Bearer',
                     'data' => new UserResource(
                         $authedUser->fresh()
                     ),
+                    'assigned_permissions' => [],
                 ]);
             }
 

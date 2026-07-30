@@ -154,6 +154,59 @@ class CustomerFinalApiController extends Controller
         );
     }
 
+
+    public function updateSellerFeedback(
+        Request $request,
+        int $id
+    ): JsonResponse {
+        $data = $request->validate([
+            'rating' => ['required', 'integer', 'between:1,5'],
+            'comment' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $feedback = SellerFeedback::query()
+            ->where('user_id', $request->user()->id)
+            ->findOrFail($id);
+
+        $feedback->update([
+            'rating' => $data['rating'],
+            'comment' => $data['comment'] ?? null,
+            'status' => 'published',
+        ]);
+
+        return ApiResponseType::sendJsonResponse(
+            true,
+            'Seller feedback updated.',
+            $feedback->fresh()
+        );
+    }
+
+    public function updateDeliveryFeedback(
+        Request $request,
+        int $id
+    ): JsonResponse {
+        $data = $request->validate([
+            'rating' => ['required', 'integer', 'between:1,5'],
+            'comment' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $feedback = DeliveryFeedback::query()
+            ->where('user_id', $request->user()->id)
+            ->findOrFail($id);
+
+        $feedback->update([
+            'rating' => $data['rating'],
+            'comment' => $data['comment'] ?? null,
+            'status' => 'published',
+        ]);
+
+        return ApiResponseType::sendJsonResponse(
+            true,
+            'Delivery feedback updated.',
+            $feedback->fresh()
+        );
+    }
+
     public function mySellerFeedback(
         Request $request
     ): JsonResponse {

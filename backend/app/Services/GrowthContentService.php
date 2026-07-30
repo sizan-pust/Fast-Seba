@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Http\Resources\ProductListResource;
 use App\Models\Banner;
 use App\Models\FeaturedSection;
 use App\Models\Product;
@@ -37,7 +38,16 @@ class GrowthContentService
                 $query->whereNull('ends_at')
                     ->orWhere('ends_at', '>=', now());
             })
-            ->when($position, fn (Builder $query) => $query->where('position', $position))
+            ->when($position, function (Builder $query, string $position): void {
+                $aliases = match ($position) {
+                    'top' => ['top', 'home_top'],
+                    'carousel' => ['carousel', 'home_carousel'],
+                    'sidebar' => ['sidebar', 'home_sidebar'],
+                    default => [$position],
+                };
+
+                $query->whereIn('position', $aliases);
+            })
             ->when($categoryId, function (Builder $query, int $categoryId): void {
                 $query->where(function (Builder $scope) use ($categoryId): void {
                     $scope->where('scope_type', 'global')
@@ -62,19 +72,31 @@ class GrowthContentService
             ->with(['product', 'category', 'brand', 'zones'])
             ->orderBy('display_order')
             ->get()
-            ->map(fn (Banner $banner) => [
-                'id' => $banner->id,
-                'type' => $banner->type,
-                'title' => $banner->title,
-                'slug' => $banner->slug,
-                'position' => $banner->position,
-                'custom_url' => $banner->custom_url,
-                'image' => $banner->imageUrl(),
-                'product_id' => $banner->product_id,
-                'category_id' => $banner->category_id,
-                'brand_id' => $banner->brand_id,
-                'metadata' => $banner->metadata ?? [],
-            ]);
+            ->map(function (Banner $banner): array {
+                $image = $banner->imageUrl();
+
+                return [
+                    'id' => $banner->id,
+                    'type' => $banner->type,
+                    'type_id' => $banner->product_id
+                        ?? $banner->category_id
+                        ?? $banner->brand_id
+                        ?? 0,
+                    'title' => $banner->title,
+                    'slug' => $banner->slug,
+                    'position' => $banner->position,
+                    'custom_url' => $banner->custom_url,
+                    'image' => $image,
+                    'banner_image' => $image,
+                    'product_id' => $banner->product_id,
+                    'product_slug' => $banner->product?->slug,
+                    'category_id' => $banner->category_id,
+                    'category_slug' => $banner->category?->slug,
+                    'brand_id' => $banner->brand_id,
+                    'brand_slug' => $banner->brand?->slug,
+                    'metadata' => $banner->metadata ?? [],
+                ];
+            });
     }
 
     public function sections(?int $zoneId = null): Collection
@@ -133,20 +155,45 @@ class GrowthContentService
         ?int $zoneId
     ): array {
         $products = $this->sectionProducts($section, $zoneId);
+        $style = in_array(
+            $section->style,
+            ['with_background', 'without_background'],
+            true
+        )
+            ? $section->style
+            : (
+                $section->background_type === 'image'
+                || filled($section->background_color)
+                    ? 'with_background'
+                    : 'without_background'
+            );
 
         return [
             'id' => $section->id,
             'title' => $section->title,
             'slug' => $section->slug,
             'short_description' => $section->short_description,
-            'style' => $section->style,
+            'style' => $style,
             'section_type' => $section->section_type,
+            'status' => $section->status,
+            'scope_type' => $section->scope_type,
+            'scope_id' => $section->scope_id,
+            'scope_category_slug' => null,
+            'scope_category_title' => null,
             'background_type' => $section->background_type,
             'background_color' => $section->background_color,
             'background_image' => $section->backgroundImageUrl(),
+            'desktop_4k_background_image' => $section->backgroundImageUrl(),
+            'desktop_fdh_background_image' => $section->backgroundImageUrl(),
+            'tablet_background_image' => $section->backgroundImageUrl(),
+            'mobile_background_image' => $section->backgroundImageUrl(),
             'text_color' => $section->text_color,
             'sort_order' => $section->sort_order,
             'products' => $products,
+            'products_count' => $products->count(),
+            'categories' => [],
+            'created_at' => $section->created_at?->toIso8601String(),
+            'updated_at' => $section->updated_at?->toIso8601String(),
         ];
     }
 
@@ -207,29 +254,18 @@ class GrowthContentService
             ->with([
                 'category',
                 'brand',
+                'seller.owner',
+                'badge',
+                'variants.attributes.attribute',
+                'variants.attributes.attributeValue',
                 'variants.storeProductVariants.store',
+                'variantAttributes.attribute',
+                'variantAttributes.attributeValue',
             ]);
     }
 
     private function productPayload(Product $product): array
     {
-        $inventory = $product->variants
-            ->flatMap(fn ($variant) => $variant->storeProductVariants)
-            ->where('status', 'active')
-            ->where('stock', '>', 0)
-            ->sortBy(fn ($item) => (float) ($item->special_price ?? $item->price))
-            ->first();
-
-        return [
-            'id' => $product->id,
-            'title' => $product->title,
-            'slug' => $product->slug,
-            'image' => $product->mainImageUrl(),
-            'category' => $product->category?->title,
-            'brand' => $product->brand?->title,
-            'price' => $inventory?->price,
-            'special_price' => $inventory?->special_price,
-            'stock' => $inventory?->stock ?? 0,
-        ];
+        return (new ProductListResource($product))->resolve(request());
     }
 }
