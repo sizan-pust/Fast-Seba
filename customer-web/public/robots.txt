@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /my-account/
+Disallow: /cart/
+Sitemap: https://fastsheba.com.bd/sitemap.xml

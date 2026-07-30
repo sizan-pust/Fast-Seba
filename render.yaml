@@ -1,0 +1,85 @@
+services:
+  - type: web
+    name: fastsheba-demo-api-56a8
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /up
+    autoDeployTrigger: commit
+
+    envVars:
+      - key: APP_NAME
+        value: FastSheba
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_URL
+        value: https://fastsheba-demo-api-56a8.onrender.com
+      - key: APP_KEY
+        sync: false
+
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: info
+
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_DATABASE
+        value: defaultdb
+      - key: DB_USERNAME
+        value: avnadmin
+      - key: DB_PASSWORD
+        sync: false
+      - key: MYSQL_SSL_CA_BASE64
+        sync: false
+
+      - key: SESSION_DRIVER
+        value: database
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
+      - key: SESSION_SAME_SITE
+        value: lax
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: MEDIA_DISK
+        value: cloudinary
+      - key: MEDIA_CONVERSIONS_DISK
+        value: cloudinary
+      - key: QUEUE_CONVERSIONS_BY_DEFAULT
+        value: "false"
+
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: CLOUDINARY_SECURE
+        value: "true"
+      - key: CLOUDINARY_ROOT_FOLDER
+        value: fastsheba
+
+      - key: FRONTEND_URLS
+        value: http://localhost:3000
+      - key: TRUSTED_PROXIES
+        value: "*"
+
+      - key: MAIL_MAILER
+        value: log
+      - key: FIREBASE_CREDENTIALS_BASE64
+        sync: false

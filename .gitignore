@@ -1,0 +1,39 @@
+# FastSheba secrets and local environment files
+.env
+**/.env
+!**/.env.example
+
+# Dependencies and generated builds
+backend/vendor/
+backend/node_modules/
+customer-web/node_modules/
+customer-web/.next/
+customer-web/out/
+customer-web/tsconfig.tsbuildinfo
+
+# Laravel runtime files
+backend/storage/logs/*
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/public/storage
+
+# Local database exports and certificates
+*.sql
+*.pem
+*.crt
+*.key
+
+# Local backups and temporary hotfix packages
+_*backup*/
+_*backups/
+**/_*backup*/
+**/_*backups/
+_medicine_catalogue_backups/
+*_hotfix*.zip
+*_hotfix*.ps1
+fix_fastsheba_sidebar_filters.py
+
+# Local test files
+backend/cloudinary_test.php
+backend/storage/app/cloudinary-test.png
